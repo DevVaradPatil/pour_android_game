@@ -189,17 +189,15 @@ Bugs found and fixed along the way: closing a valve mid-flow left holes (the hop
 - A few levels are winnable by shaking (tutorials, breathers, three tier levels); see the report.
 - Painting frames are 8 slots (4 color pairs), not GDD's 12.
 
-### Phase 5 — Meta: progression, save, economy `[ ]`
-### Phase 5 — Meta: progression, save, economy `[ ]`
-- [ ] Save: single versioned JSON file (progress, stars, coins, album, streak, settings), atomic write (write temp → rename), migration by version number
-- [ ] Coins (level rewards, chest), star chest every 20 stars
-- [ ] **Sand Album:** 4 pictures × 12 tiles for World 1; tile fills with a pour animation per level; boss completes a picture → "sand art" reveal
-- [ ] Album art pipeline: concept image → `tool/album_art.py` quantizes to the sand palette and downsamples to the tile grid (so pictures are literally made of our sand colors)
-- [ ] Win-streak bonus (3/5/10)
-- [ ] Settings screen (sensitivity, dead zone, invert, touch-tilt, sound, music, haptics, notifications, privacy/consent, credits)
+### Phase 5 — Meta: progression, save, economy `[x]`
+- [x] Save (`lib/meta/save_store.dart`): one versioned JSON file (stars, coins, streak, chests, seen album tiles, settings), written temp → backup → rename; a torn or corrupt save falls back to the backup, and both bad = fresh start; v0 → v1 migration
+- [x] Economy (`lib/meta/economy.dart`): first clear 10 + 5 per new star, bosses double, replays pay only for improvements; win-streak bonus 10/20/50 at 3/5/10 (a fail or mid-level restart ends the streak); star chest (50 coins) every 20 stars
+- [x] `Progress` (`lib/meta/progress.dart`): every change saves + notifies; replaced the in-memory session stars
+- [x] **Sand Album: 6 pictures × 10 tiles** (not 4 × 12: World 1 has 60 levels and a boss every 10, so each boss completes a picture). The pictures are pixel art drawn in code from the sand palette (`lib/meta/album.dart`), so no image pipeline is needed; new tiles pour in bottom-up (whole reveal ≤ ~3 s)
+- [x] Settings screen: sensitivity, dead zone, invert, **touch tilt only**, sound/music (stored; audio is Phase 7), vibration (live), licences
+- [ ] Notifications and privacy/consent settings → Phases 6 and 8
 
-**Tests:** save round-trip, corrupted-file recovery (falls back to backup, never loses progress), migration, economy unit tests, album tile mapping.
-**Gate:** kill app mid-level / after win on emulator (`adb shell am force-stop`) → relaunch → progress intact.
+**Results (2026-11-20):** 120 tests. Emulator gate: on a fresh save, autoplayed levels 1–11, then **force-stopped mid-level 12** and relaunched: 31 stars and 370 coins, exactly matching the economy rules; chest ready, then opened (+50); album showed picture 1 complete and picture 2 at 1/10 with the pour animation; a settings change survived a second kill.
 
 ### Phase 6 — Daily Jar, streak, sharing, notifications `[ ]`
 - [ ] Daily Jar: same level worldwide **without a server** — pick from a hand-made daily pool (or a parametric generator) by `days since epoch (UTC)` + seed

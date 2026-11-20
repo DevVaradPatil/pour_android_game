@@ -135,12 +135,14 @@ class _AlbumPictureScreenState extends State<AlbumPictureScreen> with SingleTick
     final revealed = revealedTiles(widget.index, widget.paths);
     _queue = [for (final t in revealed) if (!progress.data.seenTiles.contains(tileKey(widget.index, t))) t]..sort();
     _shown = revealed.difference(_queue.toSet());
+    // The whole reveal takes at most ~3 s, however many tiles are new.
+    if (_queue.isNotEmpty) _pour.duration = Duration(milliseconds: math.min(900, 2600 ~/ _queue.length));
     _next();
   }
 
   Future<void> _next() async {
     if (_queue.isEmpty) return;
-    await Future<void>.delayed(const Duration(milliseconds: 250));
+    await Future<void>.delayed(Duration(milliseconds: _queue.length > 3 ? 60 : 250));
     if (!mounted) return;
     await _pour.forward(from: 0);
     if (!mounted) return;
