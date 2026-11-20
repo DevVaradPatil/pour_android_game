@@ -20,7 +20,8 @@ class JarState {
 }
 
 /// Recorded input: `[tick, kind, value]`. kind 0 = gravity (half-degrees),
-/// 1 = valve toggle (index), 2 = slow-mo (0/1). Applied before that tick's step.
+/// 1 = valve toggle (index), 2 = slow-mo (0/1), 3 = fan toggle (index).
+/// Applied before that tick's step.
 class Replay {
   Replay(this.levelId, this.events, this.ticks, {this.stars = 0});
 
@@ -47,6 +48,7 @@ class LevelRun {
   LevelRun(this.level) : sim = level.build() {
     jars = [for (final j in level.jars) JarState(j)];
     valveOpen = [for (final v in level.valves) v.open];
+    fanOn = [for (final f in level.fans) f.on];
     initialGrains = sim.grains;
     _evaluate();
   }
@@ -57,6 +59,7 @@ class LevelRun {
   final SandSim sim;
   late final List<JarState> jars;
   late final List<bool> valveOpen;
+  late final List<bool> fanOn;
   late final int initialGrains;
   final List<List<int>> events = [];
 
@@ -108,6 +111,12 @@ class LevelRun {
     events.add([tick, 1, i]);
   }
 
+  void toggleFan(int i) {
+    if (status != RunStatus.playing) return;
+    fanOn[i] = !fanOn[i];
+    events.add([tick, 3, i]);
+  }
+
   void setSlowMo(bool on) {
     if (status != RunStatus.playing || on == _slow) return;
     _slow = on;
@@ -122,8 +131,54 @@ class LevelRun {
       sim.step();
       moved += sim.moved;
     }
+    for (final (i, f) in level.fans.indexed) {
+      if (!fanOn[i]) continue;
+      for (var k = 0; k < (_slow ? 1 : f.strength); k++) {
+        moved += sim.shiftGrains(f.r.x, f.r.y, f.r.w, f.r.h, f.dir);
+      }
+    }
+    for (final m in level.mixers) {
+      sim.stirRect(m.r.x, m.r.y, m.r.w, m.r.h);
+      moved += _mix(m.r);
+    }
     tick++;
     if (status == RunStatus.playing) _evaluate();
+  }
+
+  /// Converts touching pairs of different primaries (right/down neighbours,
+  /// row-major, so it's deterministic). Returns grains converted.
+  int _mix(IRect r) {
+    var n = 0;
+    final w = sim.width;
+    for (var y = r.y; y < r.y + r.h; y++) {
+      for (var x = r.x; x < r.x + r.w; x++) {
+        final t = sim.cells[y * w + x];
+        if (!Cell.isSand(t)) continue;
+        for (final (nx, ny) in [(x + 1, y), (x, y + 1)]) {
+          if (nx >= r.x + r.w || ny >= r.y + r.h) continue;
+          final u = sim.cells[ny * w + nx];
+          if (!Cell.isSand(u)) continue;
+          final mix = mixOf(SandColor.ofCell(t), SandColor.ofCell(u));
+          if (mix == null) continue;
+          sim.set(x, y, mix.cellType);
+          sim.set(nx, ny, mix.cellType);
+          n += 2;
+          break;
+        }
+      }
+    }
+    return n;
+  }
+
+  /// Grains of [c] still obtainable: loose ones, plus (with a mixer) the
+  /// primaries it can be made from. An upper bound, so it never reports
+  /// out-of-sand falsely.
+  int _available(SandColor c) {
+    int free(SandColor k) => sim.count[k.cellType] - _corkedGrains[k.cellType];
+    var n = free(c);
+    final ing = ingredientsOf(c);
+    if (level.mixers.isNotEmpty && ing != null) n += free(ing.$1) + free(ing.$2);
+    return n;
   }
 
   void _evaluate() {
@@ -155,9 +210,8 @@ class LevelRun {
         need += j.def.needed;
         needAll += j.def.target;
       }
-      final free = sim.count[c.cellType] - _corkedGrains[c.cellType];
-      freeAll += free;
-      if (need > 0 && need > free) shortColors.add(c);
+      freeAll += sim.count[c.cellType] - _corkedGrains[c.cellType];
+      if (need > 0 && need > _available(c)) shortColors.add(c);
     }
     if (needAll > freeAll) shortColors.addAll([for (final j in jars) if (!j.corked) j.def.color]);
     if (shortColors.isNotEmpty) status = RunStatus.outOfSand;
@@ -191,6 +245,8 @@ class LevelRun {
             run.toggleValve(value);
           case 2:
             run.setSlowMo(value == 1);
+          case 3:
+            run.toggleFan(value);
         }
       }
       run.step();

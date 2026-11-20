@@ -305,6 +305,64 @@ class SandSim {
     }
   }
 
+  /// Shuffles the grains along each row of the rect (deterministic: hash of
+  /// seed, tick and row). Mixers stir with this so colors meet, instead of
+  /// falling through side by side.
+  void stirRect(int x0, int y0, int w, int h) {
+    final xs = <int>[];
+    for (var y = math.max(0, y0); y < math.min(height, y0 + h); y++) {
+      xs.clear();
+      for (var x = math.max(0, x0); x < math.min(width, x0 + w); x++) {
+        if (Cell.isSand(cells[y * width + x])) xs.add(x);
+      }
+      for (var k = xs.length - 1; k > 0; k--) {
+        final m = _hash(k, y, _tick) % (k + 1);
+        final i = y * width + xs[k], j = y * width + xs[m];
+        if (cells[i] == cells[j]) continue;
+        final c = cells[i], sh = shade[i];
+        cells[i] = cells[j];
+        shade[i] = shade[j];
+        cells[j] = c;
+        shade[j] = sh;
+        _wake(xs[k], y);
+        _wake(xs[m], y);
+      }
+    }
+  }
+
+  /// Moves every grain in the rect one cell sideways ([dx] = ±1) where the
+  /// target is empty, downwind side first so a packed row moves as one (fans).
+  /// Grains pushed off the field are lost. Returns grains moved.
+  int shiftGrains(int x0, int y0, int w, int h, int dx) {
+    var n = 0;
+    for (var y = math.max(0, y0); y < math.min(height, y0 + h); y++) {
+      for (var k = 0; k < w; k++) {
+        final x = dx > 0 ? x0 + w - 1 - k : x0 + k;
+        if (x < 0 || x >= width) continue;
+        final i = y * width + x;
+        final c = cells[i];
+        if (!Cell.isSand(c)) continue;
+        final nx = x + dx;
+        if (nx < 0 || nx >= width) {
+          lost[c]++;
+          count[c]--;
+          _grains--;
+          cells[i] = Cell.empty;
+        } else {
+          final j = i + dx;
+          if (cells[j] != Cell.empty) continue;
+          cells[j] = c;
+          shade[j] = shade[i];
+          cells[i] = Cell.empty;
+          _wake(nx, y);
+        }
+        _wake(x, y);
+        n++;
+      }
+    }
+    return n;
+  }
+
   /// Sets cells of [from] type inside a rect to [to] (open/close valves).
   void replaceInRect(int x0, int y0, int w, int h, int from, int to) {
     for (var y = y0; y < y0 + h; y++) {
