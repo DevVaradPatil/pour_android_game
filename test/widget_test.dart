@@ -15,7 +15,7 @@ void main() {
   });
 
   testWidgets('game screen loads a level with its jar and HUD', (tester) async {
-    await tester.pumpWidget(const PourApp(home: GameScreen(paths: ['w1/003'], index: 0, accelStream: Stream.empty())));
+    await tester.pumpWidget(const PourApp(home: GameScreen(paths: ['w1/007'], index: 0, accelStream: Stream.empty())));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Valve'), findsOneWidget);
