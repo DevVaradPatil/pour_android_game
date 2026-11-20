@@ -169,18 +169,27 @@ Build the GDD §14 cellular automaton and nothing else.
 5. Surplus sand piles on top of a corked jar and spills when you tilt later; budget it, or relax that level's `stars.spill`.
 6. Target forgiveness for tutorial levels: ≥ 30 winning one-move scripts (L1 has 32).
 
-### Phase 4 — Content: World 1 (60 levels) `[ ]`
-- [ ] Remaining MVP elements: **mixer** (2 primaries → secondary), **splitter**, **fan** (GDD's first-20 list uses splitter at L15 and fan at L18, though MVP §16 omits them — see TODO decision; both are cheap)
-- [ ] **Painting frame** (grid of slots, each needs a color) for 6 boss levels
-- [ ] Levels 1–20 exactly per GDD §8, then 21–60 following the sawtooth curve (pleasure levels at x9, boss at x0)
-- [ ] Every level ships with a recorded 3-star replay; `level_check` runs all of them
-- [ ] Level select map (world 1 path, locked/unlocked, stars)
-- [ ] Difficulty notes per level (`assets/levels/w1/notes.md`): intended solution, new concept, target fail rate
+### Phase 4 — Content: World 1 (60 levels) `[x]` (owner playtest open)
+- [x] Elements: **mixer** (stirs per row, converts touching primary pairs; out-of-sand counts ingredients), **fan** (tap-toggled sideways push, `sim.shiftGrains`), **splitter** (wall wedge), **sloped filters** (1-thick 4-connected lines)
+- [x] **Painting frames**: rows of slot jars sharing walls (`frames` in level JSON); bosses use a splitter wedge over each slot pair
+- [x] **Level source in code**: `tool/build_levels.dart` (helpers: shelf, hopper, funnel, wedge, tier/drop modules, remix = recolor/mirror/tighten) writes the JSON + replays. **Never hand-edit level JSON**
+- [x] 60 levels: 1–20 per GDD §8; 21–60 = module combinations + remixes of 1–20; breathers at x9, bosses at x0 (paint-then-pour)
+- [x] Every level ships with a solution replay; 53/60 earn 3★, the rest 2★; `test/level/levels_test.dart` replays all of them
+- [x] `tool/level_report.dart` → `docs/levels-w1.md`: forgiveness (16 sloppy replays: timing ±20 ticks, angles ±4°) and a shake bot (random tilts/taps)
+- [x] World map (winding path, boss markers, star total, sequential unlock; all open in dev builds)
+- [x] Dev autoplay ("Watch solution" in pause, "Autoplay all" on home) logs `AUTOPLAY ...` results to logcat
 
-**Tests:** all 60 levels pass validator + replay (≥ 1 star; boss levels ≥ 1; non-boss 3-star replay exists); headless run of every level under 3 random "noisy tilt" bots to catch levels that are trivially solvable by shaking.
-**Gate:** play-through of L1–L20 on emulator (scripted where possible, manual-by-screenshot otherwise).
-**Owner gate:** human playtest of L1–L20 on a real phone; tune from notes.
+**Results (2026-11-20):** 106 tests. **Emulator gate: all 60 levels autoplayed on device; status + stars identical to headless for every level.** Forgiveness: bosses 88–100%, mixers 50–75%, most others 63–100%.
 
+Bugs found and fixed along the way: closing a valve mid-flow left holes (the hopper kept leaking); the map didn't refresh stars for levels reached with Next; painting-boss precision was impossible (0–6% forgiveness → redesigned).
+
+**Known gaps (for the owner playtest / polish pass):**
+- 21–60 reuse 1–20's mechanics and modules; the difficulty curve is flatter than GDD's sawtooth (later levels are about as forgiving as earlier ones). Tighten using playtest data.
+- Mixer levels want both valves tapped within ~0.3 s.
+- A few levels are winnable by shaking (tutorials, breathers, three tier levels); see the report.
+- Painting frames are 8 slots (4 color pairs), not GDD's 12.
+
+### Phase 5 — Meta: progression, save, economy `[ ]`
 ### Phase 5 — Meta: progression, save, economy `[ ]`
 - [ ] Save: single versioned JSON file (progress, stars, coins, album, streak, settings), atomic write (write temp → rename), migration by version number
 - [ ] Coins (level rewards, chest), star chest every 20 stars
