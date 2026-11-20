@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../game/play_kit.dart';
 import '../meta/progress.dart';
+import '../services/notifications.dart';
 import 'brand.dart';
 import 'tokens.dart';
 
@@ -38,6 +39,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _toggle('Sound effects', s.sound, (v) => s.sound = v),
           _toggle('Music', s.music, (v) => s.music = v),
           _toggle('Vibration', s.haptics, (v) => s.haptics = v),
+          _header('Daily Jar'),
+          SwitchListTile(
+            title: const Text('Daily reminder'),
+            subtitle: const Text('One notification a day when a new jar is ready'),
+            value: s.reminders,
+            onChanged: (v) async {
+              final on = v && await notifications.requestPermission();
+              progress.updateSettings((s) => s.reminders = on);
+              await refreshReminder();
+              if (mounted) setState(() {});
+              if (v && !on && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Allow notifications for Pour in system settings to get reminders')),
+                );
+              }
+            },
+          ),
           _header('About'),
           ListTile(
             title: const Text('Licences'),

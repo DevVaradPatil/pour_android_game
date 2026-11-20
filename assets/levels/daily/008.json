@@ -1,0 +1,118 @@
+{
+  "id": "d_008",
+  "name": "Sorter",
+  "seed": 8,
+  "concept": "Filters sort for you",
+  "walls": [
+    {
+      "rect": [
+        167,
+        30,
+        3,
+        92
+      ]
+    },
+    {
+      "rect": [
+        110,
+        30,
+        3,
+        92
+      ]
+    },
+    {
+      "rect": [
+        113,
+        119,
+        54,
+        3
+      ]
+    },
+    {
+      "rect": [
+        180,
+        160,
+        3,
+        42
+      ]
+    },
+    {
+      "rect": [
+        79,
+        200,
+        11,
+        2
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        130,
+        119,
+        20,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "filters": [
+    {
+      "color": "green",
+      "rect": [
+        90,
+        200,
+        90,
+        2
+      ]
+    }
+  ],
+  "sand": [
+    {
+      "color": "green",
+      "rect": [
+        140,
+        55,
+        27,
+        64
+      ]
+    },
+    {
+      "color": "purple",
+      "rect": [
+        113,
+        55,
+        27,
+        64
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "green",
+      "rect": [
+        92,
+        260,
+        88,
+        50
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    },
+    {
+      "color": "purple",
+      "rect": [
+        6,
+        235,
+        68,
+        55
+      ],
+      "fill": 0.28,
+      "purity": 0.7
+    }
+  ],
+  "stars": {
+    "purity": 0.9,
+    "spill": 0.25
+  }
+}

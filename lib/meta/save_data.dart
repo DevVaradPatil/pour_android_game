@@ -1,5 +1,6 @@
 // Everything the player keeps between sessions. Pure Dart; one JSON document.
 // Bump [SaveData.version] and add a step to [migrate] when the shape changes.
+import 'daily.dart';
 
 class Settings {
   double sensitivity = 1.0;
@@ -9,6 +10,7 @@ class Settings {
   bool sound = true;
   bool music = true;
   bool haptics = true;
+  bool reminders = false; // daily "your jar is ready" notification (opt-in)
 
   Map<String, Object?> toJson() => {
         'sensitivity': sensitivity,
@@ -18,6 +20,7 @@ class Settings {
         'sound': sound,
         'music': music,
         'haptics': haptics,
+        'reminders': reminders,
       };
 
   static Settings fromJson(Map<String, Object?> m) => Settings()
@@ -27,7 +30,8 @@ class Settings {
     ..touchOnly = m['touchOnly'] as bool? ?? false
     ..sound = m['sound'] as bool? ?? true
     ..music = m['music'] as bool? ?? true
-    ..haptics = m['haptics'] as bool? ?? true;
+    ..haptics = m['haptics'] as bool? ?? true
+    ..reminders = m['reminders'] as bool? ?? false;
 }
 
 class SaveData {
@@ -38,11 +42,14 @@ class SaveData {
     this.chestsOpened = 0,
     Set<String>? seenTiles,
     Settings? settings,
+    DailyStreak? daily,
+    this.dailyResult,
   })  : stars = stars ?? {},
         seenTiles = seenTiles ?? {},
-        settings = settings ?? Settings();
+        settings = settings ?? Settings(),
+        daily = daily ?? DailyStreak();
 
-  static const int version = 1;
+  static const int version = 2;
 
   /// Best stars per level path ("w1/001").
   final Map<String, int> stars;
@@ -55,6 +62,11 @@ class SaveData {
   /// Album tiles whose reveal animation has been shown ("picture:tile").
   final Set<String> seenTiles;
   Settings settings;
+  final DailyStreak daily;
+
+  /// Best result for the last completed daily (for the share card and home):
+  /// {n, score, stars, purity, ticks, jars: [[color, purity], ...]}.
+  Map<String, Object?>? dailyResult;
 
   int get totalStars => stars.values.fold(0, (a, b) => a + b);
 
@@ -66,6 +78,8 @@ class SaveData {
         'chestsOpened': chestsOpened,
         'seenTiles': seenTiles.toList()..sort(),
         'settings': settings.toJson(),
+        'daily': {'last': daily.last, 'streak': daily.streak, 'best': daily.best, 'freezeWeek': daily.freezeWeek},
+        'dailyResult': dailyResult,
       };
 
   /// Reads any known version (unknown fields are ignored).
@@ -78,6 +92,16 @@ class SaveData {
       chestsOpened: (m['chestsOpened'] as num?)?.toInt() ?? 0,
       seenTiles: {...((m['seenTiles'] as List?) ?? const []).cast<String>()},
       settings: Settings.fromJson((m['settings'] as Map?)?.cast<String, Object?>() ?? const {}),
+      daily: switch (m['daily']) {
+        final Map d => DailyStreak(
+            last: (d['last'] as num).toInt(),
+            streak: (d['streak'] as num).toInt(),
+            best: (d['best'] as num).toInt(),
+            freezeWeek: (d['freezeWeek'] as num).toInt(),
+          ),
+        _ => null,
+      },
+      dailyResult: (m['dailyResult'] as Map?)?.cast<String, Object?>(),
     );
   }
 
@@ -89,6 +113,10 @@ class SaveData {
       // v0 (pre-release builds): stars only, under "levels".
       out['stars'] ??= out.remove('levels');
       v = 1;
+    }
+    if (v == 1) {
+      // v2 added the Daily Jar streak/result and the reminders setting; defaults are right.
+      v = 2;
     }
     out['v'] = v;
     return out;

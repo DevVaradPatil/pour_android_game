@@ -495,20 +495,57 @@ List<Lv> moreLevels() => [
           colors: {'purple': 'blue', 'red': 'purple', 'orange': 'white', 'yellow': 'yellow'}),
     ];
 
+// ---------------------------------------------------------------- Daily Jar pool
+
+/// One a day, cycling; same date → same jar for everyone (lib/meta/daily.dart).
+/// Remixes of World 1 mechanics, each verified like the main levels.
+List<Lv> dailyLevels() => [
+      remix(2, 'Dune Gap', 'Aim over the wall', mirror: true),
+      remix(3, 'Two Ways', 'Fill one, cork it, then the other', colors: {'blue': 'green'}),
+      remix(4, 'Split Shelf', 'Two colors, two tilts', mirror: true, colors: {'blue': 'red', 'yellow': 'purple'}),
+      remix(5, 'Narrow Neck', 'Pour into the funnel', mirror: true, colors: {'green': 'orange'}),
+      remix(6, 'Gentle First', 'Order matters', colors: {'blue': 'purple', 'yellow': 'red'}),
+      remix(8, 'Stack Up', 'Two valves, in order', colors: {'blue': 'green', 'yellow': 'orange'}),
+      remix(10, 'Sand Clock', 'Hourglass', colors: {'yellow': 'red'}),
+      remix(11, 'Sorter', 'Filters sort for you', mirror: true, colors: {'blue': 'green', 'yellow': 'purple'}),
+      remix(12, 'Slide Sort', 'One chute, a filter at the end', colors: {'blue': 'purple'}),
+      remix(13, 'Three Shelves', 'Three colors, three tiers', mirror: true),
+      remix(14, 'Spare None', 'Tight budget', colors: {'red': 'green'}),
+      remix(15, 'Fork', 'Split the stream', mirror: true, colors: {'blue': 'orange'}),
+      remix(16, 'Blend', 'Mix two colors', mirror: true),
+      remix(15, 'Twin Pour', 'Split the stream', colors: {'blue': 'yellow'}),
+      remix(18, 'Gust', 'Use the fan', colors: {'orange': 'blue'}),
+      remix(2, 'High Pour', 'Aim over the wall', colors: {'blue': 'yellow'}),
+      remix(4, 'Opposite Shelves', 'Two colors, two tilts', colors: {'blue': 'green', 'yellow': 'red'}),
+      remix(5, 'Funnel Pour', 'Pour into the funnel', colors: {'green': 'purple'}),
+      remix(6, 'Lip First', 'Order matters', mirror: true),
+      remix(11, 'Red Filter', 'Filters sort for you', colors: {'blue': 'red', 'yellow': 'blue'}),
+      remix(12, 'Mirror Chute', 'One chute, a filter at the end', mirror: true, colors: {'blue': 'orange'}),
+      remix(13, 'Tier Shuffle', 'Three colors, three tiers', colors: {'blue': 'purple', 'red': 'green'}),
+      remix(14, 'Every Grain', 'Tight budget', mirror: true),
+      remix(15, 'Even Halves', 'Split the stream', colors: {'blue': 'purple'}),
+      remix(16, 'Orange Blend', 'Red and yellow make orange', colors: {'blue': 'red', 'green': 'orange'}),
+      remix(18, 'Crosswind', 'Use the fan', mirror: true, colors: {'orange': 'green'}),
+      remix(3, 'Back and Forth', 'Fill one, cork it, then the other', mirror: true, colors: {'blue': 'red'}),
+      remix(8, 'Valve Stack', 'Two valves, in order', colors: {'blue': 'purple', 'yellow': 'orange'}),
+      remix(10, 'Hourglass Night', 'Hourglass', colors: {'yellow': 'green', 'blue': 'purple'}),
+      remix(17, 'Sunset Blend', 'Mixer, then filter', colors: {'blue': 'red', 'green': 'orange'}),
+    ];
+
 // ---------------------------------------------------------------- build
 
-void main(List<String> args) {
-  final only = args.map(int.parse).toSet();
+/// Builds one set; returns the number of failures.
+int buildSet(String dir, String idPrefix, String indexFile, List<Lv> set, Set<int> only) {
   final index = <String>[];
   var failed = 0;
-  final all = [...levels, ...moreLevels()];
-  for (final (i, lv) in all.indexed) {
+  Directory('assets/levels/$dir').createSync(recursive: true);
+  for (final (i, lv) in set.indexed) {
     final n = (i + 1).toString().padLeft(3, '0');
-    final path = 'w1/$n';
+    final path = '$dir/$n';
     index.add(path);
     if (only.isNotEmpty && !only.contains(i + 1)) continue;
     final m = <String, Object?>{
-      'id': 'w1_$n',
+      'id': '${idPrefix}_$n',
       'name': lv.name,
       'seed': lv.seed ?? i + 1,
       if (lv.hint != null) 'hint': lv.hint,
@@ -524,11 +561,23 @@ void main(List<String> args) {
         .writeAsStringSync('${Replay(level.id, events, run.tick, stars: run.stars).toJson()}\n');
     final ok = problems.isEmpty && run.status == RunStatus.won;
     if (!ok) failed++;
-    stdout.writeln('${ok ? 'OK  ' : 'FAIL'} $n ${lv.name.padRight(20)} ${run.summary()}');
+    stdout.writeln('${ok ? 'OK  ' : 'FAIL'} $path ${lv.name.padRight(20)} ${run.summary()}');
     for (final p in problems) {
       stdout.writeln('       - $p');
     }
   }
-  File('assets/levels/levels.json').writeAsStringSync('${jsonEncode(index)}\n');
+  File('assets/levels/$indexFile').writeAsStringSync('${jsonEncode(index)}\n');
+  return failed;
+}
+
+/// `build_levels`            World 1 + daily pool
+/// `build_levels 5 12`       World 1 levels 5 and 12 only
+/// `build_levels daily [N]`  daily pool only
+void main(List<String> args) {
+  final daily = args.contains('daily');
+  final only = args.where((a) => a != 'daily').map(int.parse).toSet();
+  var failed = 0;
+  if (!daily) failed += buildSet('w1', 'w1', 'levels.json', [...levels, ...moreLevels()], only);
+  if (daily || only.isEmpty) failed += buildSet('daily', 'd', 'daily.json', dailyLevels(), daily ? only : const {});
   stdout.writeln(failed == 0 ? 'all built levels OK' : '$failed level(s) need work');
 }

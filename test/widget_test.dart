@@ -24,6 +24,8 @@ void main() {
     expect(find.byType(Wordmark), findsOneWidget);
     expect(find.byType(LevelNode), findsWidgets);
     expect(find.bySemanticsLabel('Play level 1'), findsOneWidget);
+    expect(find.textContaining('DAILY JAR #'), findsOneWidget);
+    expect(find.byTooltip('Play the Daily Jar'), findsOneWidget);
   });
 
   testWidgets('map refreshes when stars change while it is covered (Next chains)', (tester) async {
