@@ -7,9 +7,12 @@ import 'package:flutter/services.dart';
 import '../game/game_screen.dart';
 import '../game/sand_screen.dart';
 import '../level/level_check.dart';
+import '../meta/progress.dart';
+import 'album_screen.dart';
 import 'brand.dart';
 import 'components.dart';
 import 'gallery_screen.dart';
+import 'settings_screen.dart';
 import 'tokens.dart';
 
 /// Title + World 1 map: a winding path of level nodes, boss every 10th.
@@ -36,13 +39,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Next level to play: first one without stars.
   int _current(List<String> paths) {
-    final i = paths.indexWhere((p) => (sessionStars[p] ?? 0) == 0);
+    final i = paths.indexWhere((p) => progress.starsFor(p) == 0);
     return i < 0 ? paths.length - 1 : i;
   }
 
   /// Sequential unlocking; dev builds open everything for testing.
   bool _unlocked(List<String> paths, int i) =>
-      !kReleaseMode || i == 0 || (sessionStars[paths[i - 1]] ?? 0) > 0;
+      !kReleaseMode || i == 0 || progress.starsFor(paths[i - 1]) > 0;
 
   Future<void> _play(List<String> paths, int i, {bool autoplay = false}) async {
     await Navigator.of(context).push(
@@ -57,6 +60,20 @@ class _HomeScreenState extends State<HomeScreen> {
     context,
   ).push(MaterialPageRoute<void>(builder: (_) => screen));
 
+  Future<void> _openChest() async {
+    final coins = progress.openChest();
+    if (coins == 0 || !mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.card_giftcard_rounded, size: 48, color: PourColors.accent),
+        title: Text('Star chest!', style: PourText.title, textAlign: TextAlign.center),
+        content: Text('+$coins coins', style: PourText.heading, textAlign: TextAlign.center),
+        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Nice'))],
+      ),
+    );
+  }
+
   double _nodeX(int i, double width) =>
       width / 2 + math.sin(i * 0.85) * width * 0.27;
 
@@ -67,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: FutureBuilder<List<String>>(
           future: _paths,
           builder: (context, snap) => ListenableBuilder(
-            listenable: starsChanged,
+            listenable: progress,
             builder: (context, _) => _map(context, snap.data),
           ),
         ),
@@ -78,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _map(BuildContext context, List<String>? paths) {
     if (paths == null) return const SizedBox.shrink();
     final current = _current(paths);
-    final stars = paths.fold(0, (a, p) => a + (sessionStars[p] ?? 0));
+    final stars = paths.fold(0, (a, p) => a + progress.starsFor(p));
     if (!_scrolledToCurrent) {
       _scrolledToCurrent = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,8 +120,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Row(
             children: [
-              const Wordmark(height: 40),
+              const Wordmark(height: 36),
               const Spacer(),
+              CounterChip(
+                icon: Icons.monetization_on_rounded,
+                value: progress.data.coins,
+                label: 'coins',
+              ),
+              const SizedBox(width: Space.s),
               CounterChip(
                 icon: Icons.star_rounded,
                 value: stars,
@@ -114,9 +137,39 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        Text(
-          'World 1 · Desert Glass',
-          style: PourText.heading.copyWith(color: PourColors.textMuted),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.l),
+          child: Row(
+            children: [
+              Text(
+                'World 1 · Desert Glass',
+                style: PourText.heading.copyWith(color: PourColors.textMuted),
+              ),
+              const Spacer(),
+              if (progress.chestsReady > 0)
+                Badge.count(
+                  count: progress.chestsReady,
+                  backgroundColor: PourColors.danger,
+                  child: RoundIconButton(
+                    icon: Icons.card_giftcard_rounded,
+                    tooltip: 'Open star chest',
+                    onPressed: _openChest,
+                  ),
+                ),
+              const SizedBox(width: Space.s),
+              RoundIconButton(
+                icon: Icons.photo_library_rounded,
+                tooltip: 'Sand Album',
+                onPressed: () => _push(AlbumScreen(paths: paths)),
+              ),
+              const SizedBox(width: Space.s),
+              RoundIconButton(
+                icon: Icons.settings_rounded,
+                tooltip: 'Settings',
+                onPressed: () => _push(const SettingsScreen()),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: Space.s),
         Expanded(
@@ -146,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             LevelNode(
                               number: i + 1,
-                              stars: sessionStars[p] ?? 0,
+                              stars: progress.starsFor(p),
                               state: !_unlocked(paths, i)
                                   ? LevelState.locked
                                   : (i == current

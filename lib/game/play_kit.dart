@@ -8,13 +8,22 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
+import '../meta/progress.dart';
 import '../sim/sand_sim.dart';
 import 'palette.dart';
 import 'tilt.dart';
 
-/// App-wide tilt settings + neutral pose (one screen plays at a time).
-// ponytail: in memory until the Phase 5 save file.
+/// App-wide tilt mapper + neutral pose (one screen plays at a time). Its knobs
+/// mirror the saved settings; call [applyTiltSettings] after they change.
 final TiltMapper tiltMapper = TiltMapper();
+
+void applyTiltSettings() {
+  final s = progress.settings;
+  tiltMapper
+    ..sensitivity = s.sensitivity
+    ..deadZoneDeg = s.deadZone
+    ..invert = s.invert;
+}
 
 /// Accelerometer (or touch-tilt override) → gravity angle for the sim.
 class TiltInput {
@@ -31,7 +40,7 @@ class TiltInput {
   double? _touchDeg; // non-null while touch-tilting
   double _touchStartX = 0;
 
-  double get angle => _touchDeg ?? (hasSensor ? tiltMapper.map(rawRoll) : 0);
+  double get angle => _touchDeg ?? (hasSensor && !progress.settings.touchOnly ? tiltMapper.map(rawRoll) : 0);
   bool get touching => _touchDeg != null;
 
   void _onAccel(AccelerometerEvent e) {
@@ -140,37 +149,42 @@ class GridPainter extends CustomPainter {
   bool shouldRepaint(GridPainter old) => old.image != image;
 }
 
+/// Saved tilt settings as list tiles (used by the sheet and the settings screen).
+List<Widget> tiltSettingTiles(StateSetter setState) {
+  void set(void Function() change) => setState(() {
+        progress.updateSettings((_) => change());
+        applyTiltSettings();
+      });
+  final s = progress.settings;
+  Widget slider(String label, double value, double min, double max, int div, ValueChanged<double> onChanged) => ListTile(
+        title: Text('$label: ${value.toStringAsFixed(1)}'),
+        subtitle: Slider(value: value, min: min, max: max, divisions: div, onChanged: onChanged),
+      );
+  return [
+    slider('Sensitivity', s.sensitivity, 0.5, 2.0, 15, (v) => set(() => s.sensitivity = v)),
+    slider('Dead zone °', s.deadZone, 0, 8, 16, (v) => set(() => s.deadZone = v)),
+    SwitchListTile(title: const Text('Invert tilt'), value: s.invert, onChanged: (v) => set(() => s.invert = v)),
+    SwitchListTile(
+      title: const Text('Touch tilt only'),
+      subtitle: const Text('Ignore the tilt sensor; drag the bottom of the screen'),
+      value: s.touchOnly,
+      onChanged: (v) => set(() => s.touchOnly = v),
+    ),
+  ];
+}
+
 /// Tilt settings sheet. [extra] adds screen-specific rows (e.g. dev sand speed).
 Future<void> showTiltSettings(BuildContext context, {List<Widget> Function(StateSetter)? extra}) =>
     showModalBottomSheet<void>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setSheet) {
-          Widget slider(String label, double value, double min, double max, int div, ValueChanged<double> set) =>
-              ListTile(
-                title: Text('$label: ${value.toStringAsFixed(1)}'),
-                subtitle: Slider(
-                  value: value,
-                  min: min,
-                  max: max,
-                  divisions: div,
-                  onChanged: (v) => setSheet(() => set(v)),
-                ),
-              );
-          return ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              slider('Sensitivity', tiltMapper.sensitivity, 0.5, 2.0, 15, (v) => tiltMapper.sensitivity = v),
-              slider('Dead zone °', tiltMapper.deadZoneDeg, 0, 8, 16, (v) => tiltMapper.deadZoneDeg = v),
-              SwitchListTile(
-                title: const Text('Invert tilt'),
-                value: tiltMapper.invert,
-                onChanged: (v) => setSheet(() => tiltMapper.invert = v),
-              ),
-              ...?extra?.call(setSheet),
-            ],
-          );
-        },
+        builder: (context, setSheet) => ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: 24),
+          children: [
+            ...tiltSettingTiles(setSheet),
+            ...?extra?.call(setSheet),
+          ],
+        ),
       ),
     );
