@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pour_sand_game/game/game_screen.dart';
 import 'package:pour_sand_game/game/sand_screen.dart';
@@ -6,6 +7,10 @@ import 'package:pour_sand_game/ui/brand.dart';
 import 'package:pour_sand_game/ui/components.dart';
 
 void main() {
+  // rootBundle caches asset futures across tests; a future cached in an earlier
+  // test's fake-async zone never completes in the next one.
+  setUp(rootBundle.clear);
+
   testWidgets('home lists the levels', (tester) async {
     await tester.pumpWidget(const PourApp());
     await tester.pumpAndSettle();
@@ -17,11 +22,12 @@ void main() {
   testWidgets('map refreshes when stars change while it is covered (Next chains)', (tester) async {
     await tester.pumpWidget(const PourApp());
     await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('Level 2, 0 stars'), findsOneWidget);
+    Finder level2(int stars) => find.byWidgetPredicate((w) => w is LevelNode && w.number == 2 && w.stars == stars);
+    expect(level2(0), findsOneWidget);
     sessionStars['w1/002'] = 3;
     starsChanged.value++;
     await tester.pump();
-    expect(find.bySemanticsLabel('Level 2, 3 stars'), findsOneWidget);
+    expect(level2(3), findsOneWidget);
     sessionStars.clear();
   });
 
