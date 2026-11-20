@@ -30,7 +30,11 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
   - Is level 1 obvious without help?
   - Do the valve and filter read clearly?
   This is the last feel check before Phase 4 builds 60 levels on this physics. (Phase 3)
-- [ ] Playtest L1–L20 on a real phone and report where you got stuck or bored. (Phase 4)
+- [ ] **Playtest World 1 on a real phone** (Phase 4). The levels are proven solvable; whether they're *fun* and fairly paced is what only you can judge. Report where you got stuck, bored or confused, especially:
+  - Bosses (10, 20, 30, …).
+  - Mixer levels (16, 27, 35, 58): do you manage to tap both valves together?
+  - Whether 21–60 feel too samey; they're remixes and combos of 1–20.
+  - Dev builds unlock every level. "Watch solution" in the pause menu shows the intended play.
 
 ## Accounts & credentials (store secrets outside the repo; add the path here, not the value)
 

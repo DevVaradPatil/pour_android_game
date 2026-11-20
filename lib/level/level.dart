@@ -10,7 +10,12 @@
 //   "jars":    [{"color": "blue", "rect": [x, y, w, h], "fill": 0.5, "purity": 0.8}],   // rect = inside
 //   "valves":  [{"rect": [x, y, w, h], "open": false}],
 //   "filters": [{"color": "blue", "rect": [x, y, w, 2]}],
-//   "stars":   {"purity": 0.95, "spill": 0.10}
+//   "mixers":  [{"rect": [x, y, w, h]}],                  // red+yellow→orange, blue+yellow→green, red+blue→purple
+//   "fans":    [{"rect": [x, y, w, h], "dir": 1, "on": false, "strength": 2}],   // tap to toggle
+//   "frames":  [{"x": 60, "y": 300, "slot": [8, 12], "fill": 0.6, "purity": 0.8,
+//                "colors": ["red", "orange", "yellow"]}],  // a row of painting slots (boss levels)
+//   "stars":   {"purity": 0.95, "spill": 0.10},
+//   "concept": "what this level teaches"                    // for notes, not shown in game
 // }
 import 'dart:convert';
 import 'dart:math' as math;
@@ -115,11 +120,14 @@ class ColoredShape {
 }
 
 class JarDef {
-  JarDef(this.color, this.r, this.fill, this.purity);
+  JarDef(this.color, this.r, this.fill, this.purity, {this.slot = false});
   final SandColor color;
   final IRect r; // inside of the jar
   final double fill; // fraction of the inside that must be filled
   final double purity; // min share of [color] needed to cork
+
+  /// A painting-frame slot: no label row under it; its target color is shown inside.
+  final bool slot;
 
   /// Grains needed to reach the fill line.
   int get target => (r.w * r.h * fill).round();
@@ -137,6 +145,40 @@ class ValveDef {
   final bool open;
 }
 
+/// Turns touching pairs of different primaries inside its rect into the secondary.
+class MixerDef {
+  MixerDef(this.r);
+  final IRect r;
+}
+
+/// Pushes grains in its rect sideways while on (tap to toggle).
+class FanDef {
+  FanDef(this.r, this.dir, this.on, this.strength);
+  final IRect r;
+  final int dir; // +1 right, -1 left
+  final bool on;
+  final int strength; // cells pushed per tick
+}
+
+const _primaries = {SandColor.red, SandColor.yellow, SandColor.blue};
+
+/// Result of mixing two different primaries, or null.
+SandColor? mixOf(SandColor a, SandColor b) {
+  if (a == b || !_primaries.contains(a) || !_primaries.contains(b)) return null;
+  final pair = {a, b};
+  if (!pair.contains(SandColor.red)) return SandColor.green;
+  if (!pair.contains(SandColor.blue)) return SandColor.orange;
+  return SandColor.purple;
+}
+
+/// The two primaries that make [c], or null if [c] isn't a secondary.
+(SandColor, SandColor)? ingredientsOf(SandColor c) => switch (c) {
+      SandColor.green => (SandColor.blue, SandColor.yellow),
+      SandColor.orange => (SandColor.red, SandColor.yellow),
+      SandColor.purple => (SandColor.red, SandColor.blue),
+      _ => null,
+    };
+
 class Level {
   Level({
     required this.id,
@@ -148,8 +190,11 @@ class Level {
     required this.jars,
     required this.valves,
     required this.filters,
+    this.mixers = const [],
+    this.fans = const [],
     this.starPurity = 0.95,
     this.starSpill = 0.10,
+    this.concept,
   });
 
   factory Level.fromJson(String src) {
@@ -164,16 +209,44 @@ class Level {
       hint: m['hint'] as String?,
       walls: list('walls').map(Shape.parse).toList(),
       sand: list('sand').map((e) => ColoredShape(color(e), Shape.parse(e))).toList(),
-      jars: list('jars')
-          .map((e) => JarDef(
-                color(e),
-                _rect(e['rect']),
-                (e['fill'] as num?)?.toDouble() ?? 0.6,
-                (e['purity'] as num?)?.toDouble() ?? 0.9,
-              ))
-          .toList(),
+      jars: [
+        for (final e in list('jars'))
+          JarDef(
+            color(e),
+            _rect(e['rect']),
+            (e['fill'] as num?)?.toDouble() ?? 0.6,
+            (e['purity'] as num?)?.toDouble() ?? 0.9,
+            slot: e['slot'] as bool? ?? false,
+          ),
+        // A frame is a row of slots sharing walls.
+        for (final f in list('frames'))
+          for (final (i, c) in (f['colors'] as List).cast<String>().indexed)
+            JarDef(
+              SandColor.values.byName(c),
+              (
+                x: (f['x'] as num).toInt() + i * ((f['slot'] as List)[0] as int) + i * jarWall,
+                y: (f['y'] as num).toInt(),
+                w: (f['slot'] as List)[0] as int,
+                h: (f['slot'] as List)[1] as int,
+              ),
+              (f['fill'] as num?)?.toDouble() ?? 0.6,
+              (f['purity'] as num?)?.toDouble() ?? 0.8,
+              slot: true,
+            ),
+      ],
       valves: list('valves').map((e) => ValveDef(_rect(e['rect']), e['open'] as bool? ?? false)).toList(),
       filters: list('filters').map((e) => ColoredShape(color(e), Shape.parse(e))).toList(),
+      mixers: [for (final e in list('mixers')) MixerDef(_rect(e['rect']))],
+      fans: [
+        for (final e in list('fans'))
+          FanDef(
+            _rect(e['rect']),
+            (e['dir'] as num?)?.toInt() ?? 1,
+            e['on'] as bool? ?? false,
+            (e['strength'] as num?)?.toInt() ?? 2,
+          ),
+      ],
+      concept: m['concept'] as String?,
       starPurity: (stars['purity'] as num?)?.toDouble() ?? 0.95,
       starSpill: (stars['spill'] as num?)?.toDouble() ?? 0.10,
     );
@@ -186,7 +259,10 @@ class Level {
   final List<ColoredShape> sand, filters;
   final List<JarDef> jars;
   final List<ValveDef> valves;
+  final List<MixerDef> mixers;
+  final List<FanDef> fans;
   final double starPurity, starSpill;
+  final String? concept;
 
   /// Builds the playfield. Order matters: walls, filters, valves, jar glass, then
   /// sand into whatever is still empty.
@@ -220,7 +296,7 @@ class Level {
     if (jars.isEmpty) out.add('no jars');
     for (final (i, j) in jars.indexed) {
       final r = j.r;
-      final outer = (x: r.x - jarWall, y: r.y, w: r.w + 2 * jarWall, h: r.h + jarWall + jarLabelRows);
+      final outer = (x: r.x - jarWall, y: r.y, w: r.w + 2 * jarWall, h: r.h + jarWall + (j.slot ? 0 : jarLabelRows));
       if (!inside(outer)) out.add('jar $i (+ glass and label room) is outside the field');
       if (r.w < 6 || r.h < 8) out.add('jar $i is smaller than 6x8');
       if (j.fill <= 0.1 || j.fill > 0.85) out.add('jar $i fill ${j.fill} not in (0.1, 0.85] (cork row needs room)');
@@ -228,16 +304,31 @@ class Level {
     }
     for (final (i, f) in filters.indexed) {
       final b = f.shape.bounds;
-      if (f.shape is! RectShape || math.min(b.w, b.h) > 2) out.add('filter $i must be a rect ≤ 2 cells thick');
+      final ok = switch (f.shape) {
+        RectShape() => math.min(b.w, b.h) <= 2,
+        LineShape(:final t) => t == 1,
+        _ => false,
+      };
+      if (!ok) out.add('filter $i must be a rect ≤ 2 thick or a line with t = 1');
     }
     for (final (i, v) in valves.indexed) {
       if (!inside(v.r)) out.add('valve $i is outside the field');
     }
-    // Sand budget: each color needs at least what its jars need.
+    for (final (i, m) in mixers.indexed) {
+      if (!inside(m.r)) out.add('mixer $i is outside the field');
+    }
+    for (final (i, f) in fans.indexed) {
+      if (!inside(f.r)) out.add('fan $i is outside the field');
+      if (f.dir.abs() != 1 || f.strength < 1 || f.strength > 3) out.add('fan $i needs dir ±1 and strength 1..3');
+    }
+    // Sand budget: each color needs at least what its jars need (secondaries
+    // can also come from their primaries when there's a mixer).
     final sim = build();
     for (final c in SandColor.values) {
       final need = jars.where((j) => j.color == c).fold(0, (a, j) => a + j.needed);
-      final have = sim.count[c.cellType];
+      var have = sim.count[c.cellType];
+      final ing = ingredientsOf(c);
+      if (mixers.isNotEmpty && ing != null) have += sim.count[ing.$1.cellType] + sim.count[ing.$2.cellType];
       if (need > have) out.add('${c.name}: jars need $need grains, level has $have');
     }
     return out;

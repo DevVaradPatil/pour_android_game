@@ -1,0 +1,111 @@
+{
+  "id": "w1_053",
+  "name": "Hourglass III",
+  "seed": 53,
+  "concept": "Hourglass with a pure middle",
+  "walls": [
+    {
+      "line": [
+        50,
+        40,
+        112,
+        150
+      ],
+      "t": 3
+    },
+    {
+      "line": [
+        190,
+        40,
+        128,
+        150
+      ],
+      "t": 3
+    },
+    {
+      "rect": [
+        47,
+        0,
+        3,
+        41
+      ]
+    },
+    {
+      "rect": [
+        190,
+        0,
+        3,
+        41
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        110,
+        150,
+        21,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "sand": [
+    {
+      "color": "green",
+      "rect": [
+        50,
+        5,
+        140,
+        20
+      ]
+    },
+    {
+      "color": "purple",
+      "rect": [
+        50,
+        25,
+        140,
+        15
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "green",
+      "rect": [
+        29,
+        250,
+        62,
+        40
+      ],
+      "fill": 0.2,
+      "purity": 0.8
+    },
+    {
+      "color": "purple",
+      "rect": [
+        95,
+        235,
+        50,
+        45
+      ],
+      "fill": 0.5,
+      "purity": 0.8
+    },
+    {
+      "color": "green",
+      "rect": [
+        149,
+        250,
+        62,
+        40
+      ],
+      "fill": 0.2,
+      "purity": 0.8
+    }
+  ],
+  "stars": {
+    "purity": 0.9
+  }
+}

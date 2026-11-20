@@ -3,6 +3,7 @@
   "name": "First Pour",
   "seed": 1,
   "hint": "Tilt your phone to pour",
+  "concept": "Tilt and sand moves",
   "walls": [
     {
       "rect": [

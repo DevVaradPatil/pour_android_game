@@ -1,0 +1,66 @@
+{
+  "id": "w1_033",
+  "name": "Narrow Margin",
+  "seed": 33,
+  "concept": "Tight budget from the other side",
+  "walls": [
+    {
+      "rect": [
+        18,
+        110,
+        87,
+        3
+      ]
+    },
+    {
+      "rect": [
+        15,
+        40,
+        3,
+        73
+      ]
+    },
+    {
+      "line": [
+        220,
+        150,
+        162,
+        215
+      ],
+      "t": 3
+    },
+    {
+      "line": [
+        110,
+        150,
+        148,
+        215
+      ],
+      "t": 3
+    }
+  ],
+  "sand": [
+    {
+      "color": "yellow",
+      "rect": [
+        18,
+        74,
+        46,
+        36
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "yellow",
+      "rect": [
+        130,
+        235,
+        50,
+        50
+      ],
+      "fill": 0.6,
+      "purity": 0.8
+    }
+  ]
+}

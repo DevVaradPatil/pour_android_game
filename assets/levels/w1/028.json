@@ -1,0 +1,79 @@
+{
+  "id": "w1_028",
+  "name": "Headwind",
+  "seed": 28,
+  "concept": "The fan blows the other way",
+  "walls": [
+    {
+      "rect": [
+        150,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        87,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        90,
+        80,
+        60,
+        3
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        110,
+        80,
+        20,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "fans": [
+    {
+      "rect": [
+        0,
+        100,
+        240,
+        80
+      ],
+      "dir": -1,
+      "strength": 2
+    }
+  ],
+  "sand": [
+    {
+      "color": "purple",
+      "rect": [
+        90,
+        40,
+        60,
+        40
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "purple",
+      "rect": [
+        10,
+        280,
+        65,
+        50
+      ],
+      "fill": 0.35,
+      "purity": 0.8
+    }
+  ]
+}

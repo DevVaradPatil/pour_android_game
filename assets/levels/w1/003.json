@@ -1,14 +1,69 @@
 {
   "id": "w1_003",
-  "name": "Valve",
+  "name": "Both Ways",
   "seed": 3,
-  "hint": "Tap the valve to open it",
+  "hint": "Finish one jar, then the other",
+  "concept": "Tilting back spills: a cork keeps a finished jar safe",
   "walls": [
-    {"rect": [80, 60, 3, 92]},
-    {"rect": [157, 60, 3, 92]},
-    {"rect": [83, 149, 74, 3]}
+    {
+      "rect": [
+        60,
+        140,
+        120,
+        3
+      ]
+    },
+    {
+      "rect": [
+        119,
+        105,
+        3,
+        38
+      ]
+    }
   ],
-  "valves": [{"rect": [110, 149, 20, 3]}],
-  "sand": [{"color": "purple", "rect": [83, 95, 74, 54]}],
-  "jars": [{"color": "purple", "rect": [90, 250, 60, 60], "fill": 0.45, "purity": 0.8}]
+  "sand": [
+    {
+      "color": "blue",
+      "rect": [
+        82,
+        118,
+        37,
+        22
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        122,
+        118,
+        37,
+        22
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "blue",
+      "rect": [
+        4,
+        165,
+        58,
+        45
+      ],
+      "fill": 0.2,
+      "purity": 0.8
+    },
+    {
+      "color": "blue",
+      "rect": [
+        178,
+        165,
+        58,
+        45
+      ],
+      "fill": 0.2,
+      "purity": 0.8
+    }
+  ]
 }

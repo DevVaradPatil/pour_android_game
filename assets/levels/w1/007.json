@@ -1,0 +1,68 @@
+{
+  "id": "w1_007",
+  "name": "Valve",
+  "seed": 7,
+  "hint": "Tap the valve to open it",
+  "concept": "Valves hold sand until you tap them",
+  "walls": [
+    {
+      "rect": [
+        80,
+        60,
+        3,
+        92
+      ]
+    },
+    {
+      "rect": [
+        157,
+        60,
+        3,
+        92
+      ]
+    },
+    {
+      "rect": [
+        83,
+        149,
+        74,
+        3
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        110,
+        149,
+        20,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "sand": [
+    {
+      "color": "purple",
+      "rect": [
+        83,
+        95,
+        74,
+        54
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "purple",
+      "rect": [
+        90,
+        250,
+        60,
+        60
+      ],
+      "fill": 0.45,
+      "purity": 0.8
+    }
+  ]
+}

@@ -1,0 +1,825 @@
+{
+  "id": "w1_017",
+  "name": "Green and Blue",
+  "seed": 17,
+  "concept": "Combine tools: the mixer makes green, spare blue drops through a sloped filter",
+  "walls": [
+    {
+      "rect": [
+        77,
+        0,
+        3,
+        31
+      ]
+    },
+    {
+      "rect": [
+        160,
+        0,
+        3,
+        31
+      ]
+    },
+    {
+      "line": [
+        80,
+        30,
+        116,
+        90
+      ],
+      "t": 3
+    },
+    {
+      "line": [
+        160,
+        30,
+        124,
+        90
+      ],
+      "t": 3
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        118,
+        89,
+        5,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "mixers": [
+    {
+      "rect": [
+        108,
+        100,
+        24,
+        50
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "color": "blue",
+      "line": [
+        60,
+        160,
+        170,
+        270
+      ],
+      "t": 1
+    }
+  ],
+  "sand": [
+    {
+      "color": "blue",
+      "rect": [
+        80,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        81,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        82,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        83,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        84,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        85,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        86,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        87,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        88,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        89,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        90,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        91,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        92,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        93,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        94,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        95,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        96,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        97,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        98,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        99,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        100,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        101,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        102,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        103,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        104,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        105,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        106,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        107,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        108,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        109,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        110,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        111,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        112,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        113,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        114,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        115,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        116,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        117,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        118,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        119,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        120,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        121,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        122,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        123,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        124,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        125,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        126,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        127,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        128,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        129,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        130,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        131,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        132,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        133,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        134,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        135,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        136,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        137,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        138,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        139,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        140,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        141,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        142,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        143,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        144,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        145,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        146,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        147,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        148,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        149,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        150,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        151,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        152,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        153,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        154,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        155,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        156,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        157,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        158,
+        0,
+        1,
+        30
+      ]
+    },
+    {
+      "color": "blue",
+      "rect": [
+        159,
+        0,
+        1,
+        30
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "blue",
+      "rect": [
+        60,
+        310,
+        95,
+        20
+      ],
+      "fill": 0.15,
+      "purity": 0.8
+    },
+    {
+      "color": "green",
+      "rect": [
+        165,
+        290,
+        66,
+        50
+      ],
+      "fill": 0.35,
+      "purity": 0.65
+    }
+  ],
+  "stars": {
+    "purity": 0.85,
+    "spill": 0.25
+  }
+}

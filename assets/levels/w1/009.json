@@ -1,0 +1,86 @@
+{
+  "id": "w1_009",
+  "name": "Zigzag",
+  "seed": 9,
+  "hint": "Open the valve and enjoy",
+  "concept": "A breather: watch it flow",
+  "walls": [
+    {
+      "rect": [
+        17,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        80,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        20,
+        80,
+        60,
+        3
+      ]
+    },
+    {
+      "line": [
+        30,
+        100,
+        150,
+        220
+      ],
+      "t": 3
+    },
+    {
+      "line": [
+        215,
+        210,
+        100,
+        325
+      ],
+      "t": 3
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        40,
+        80,
+        20,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "sand": [
+    {
+      "color": "orange",
+      "rect": [
+        20,
+        40,
+        60,
+        40
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "orange",
+      "rect": [
+        25,
+        345,
+        90,
+        45
+      ],
+      "fill": 0.35,
+      "purity": 0.8
+    }
+  ]
+}
