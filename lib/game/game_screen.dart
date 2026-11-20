@@ -15,9 +15,11 @@ import '../ui/components.dart';
 import '../ui/tokens.dart';
 import 'play_kit.dart';
 
-/// Best stars per level path this session.
+/// Best stars per level path this session; [starsChanged] ticks on every update
+/// so the map refreshes even when levels were chained with Next.
 // ponytail: in memory until the Phase 5 save file.
 final Map<String, int> sessionStars = {};
+final starsChanged = ValueNotifier<int>(0);
 
 /// Plays `paths[index]` (paths relative to assets/levels/, e.g. "w1/001").
 class GameScreen extends StatefulWidget {
@@ -127,6 +129,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       _shown = run.status;
       if (run.status == RunStatus.won) {
         sessionStars[_path] = math.max(sessionStars[_path] ?? 0, run.stars);
+        starsChanged.value++;
         HapticFeedback.mediumImpact();
       }
       setState(() {});

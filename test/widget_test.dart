@@ -14,6 +14,17 @@ void main() {
     expect(find.bySemanticsLabel('Play level 1'), findsOneWidget);
   });
 
+  testWidgets('map refreshes when stars change while it is covered (Next chains)', (tester) async {
+    await tester.pumpWidget(const PourApp());
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Level 2, 0 stars'), findsOneWidget);
+    sessionStars['w1/002'] = 3;
+    starsChanged.value++;
+    await tester.pump();
+    expect(find.bySemanticsLabel('Level 2, 3 stars'), findsOneWidget);
+    sessionStars.clear();
+  });
+
   testWidgets('game screen loads a level with its jar and HUD', (tester) async {
     await tester.pumpWidget(const PourApp(home: GameScreen(paths: ['w1/007'], index: 0, accelStream: Stream.empty())));
     await tester.pump();
