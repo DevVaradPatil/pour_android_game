@@ -6,4 +6,5 @@
 | `fonts/Nunito.ttf` (variable) | Nunito Project Authors, github.com/google/fonts `ofl/nunito` | SIL OFL 1.1 (`fonts/OFL-Nunito.txt`) |
 
 Logo, icons and splash are original, drawn in code (`lib/ui/brand.dart`).
+Sound effects and the music loop are original, synthesized by `tool/audio/synth.dart`.
 Both licences are shown on the in-app licences page (`registerFontLicenses()` in `lib/ui/theme.dart`).

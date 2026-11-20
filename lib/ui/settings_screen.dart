@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../game/play_kit.dart';
 import '../meta/progress.dart';
+import '../services/audio.dart';
 import '../services/notifications.dart';
 import 'brand.dart';
 import 'tokens.dart';
 
-/// Saved settings. Sound and music take effect once audio lands (Phase 7).
+/// Saved settings; every change applies at once.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -23,7 +24,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _toggle(String title, bool value, void Function(bool) set) => SwitchListTile(
         title: Text(title),
         value: value,
-        onChanged: (v) => setState(() => progress.updateSettings((_) => set(v))),
+        onChanged: (v) => setState(() {
+          progress.updateSettings((_) => set(v));
+          audio.syncMusic();
+        }),
       );
 
   @override

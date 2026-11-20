@@ -12,7 +12,7 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
   - The logo is built around **"P[jar]UR"**, with the jar standing in for the O. A name without an O (or similar) needs a new wordmark. The jar mark and app icon work with any name. Decide before store art (Phase 11).
 - [ ] **Splitter & fan in MVP?** GDD §8 uses them at L15/L18, but MVP §16 leaves them out. The plan includes them because they're cheap. (Phase 4)
 - [ ] **Target audience age.** Choosing under-13 brings Families policy ad limits. Recommended: 13+. (Phase 8)
-- [ ] **Music:** license a track, or approve a generated one. (Phase 7)
+- [ ] **Music + sounds:** a generated ambient loop and SFX ship now (`tool/audio/synth.dart`). Listen on a real phone and approve them, or license a track and drop it in as `assets/audio/music_loop.wav`. (Phase 7)
 - [ ] **AI image generation for album art / store graphics.** It spends your creative-tool credits. Approve per batch. (Phases 5, 11)
 - [ ] Open GDD questions §18: landscape for tablets? free 360° tilt in painting levels? lives A/B? premium edition?
 
@@ -20,7 +20,7 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
 
 ## Emulator / devices
 
-- [ ] **Emulator storage.** `Medium_Phone_API_36.1` has ~470 MB free, so the 139 MB debug APK fails to install (`INSTALL_FAILED_INSUFFICIENT_STORAGE`). Profile builds work, but there's no hot reload. Pick one fix:
+- [ ] **Emulator storage.** `Medium_Phone_API_36.1` is down to ~420 MB free, below Android's 500 MB low-storage line, so **no APK installs any more**, not even profile builds (`INSTALL_FAILED_INSUFFICIENT_STORAGE`, 2026-11-20). Pick one fix:
   - Free space by uninstalling unused apps on it (`in.sawari.sawari`, `com.varad.bolo`), or
   - Android Studio → Device Manager → the AVD → Edit → Advanced → Internal Storage 8 GB → Wipe Data, or
   - Tell Claude to create a separate project AVD with larger storage. It's local and reversible, and uses ~4–8 GB of host disk.

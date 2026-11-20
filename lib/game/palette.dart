@@ -27,7 +27,7 @@ enum SandColor {
 
 const int wallRgb = 0xE9DCC6, corkRgb = 0xC08A55, gateRgb = 0x8C7B6B;
 
-/// Index = type * 4 + shade. Values are RGBA8888 read as a little-endian
+/// Index = type * 8 + covered * 4 + shade (covered = sand right above it). Values are RGBA8888 read as a little-endian
 /// uint32 (0xAABBGGRR). Empty = transparent so the background shows through.
 final Uint32List colorLut = _buildLut();
 
@@ -38,25 +38,28 @@ int _abgr(int rgb, double k, [int alpha = 0xFF]) {
 }
 
 Uint32List _buildLut() {
-  final lut = Uint32List(256 * 4);
+  final lut = Uint32List(256 * 8);
   const wallShade = [1.0, 0.97, 1.0, 0.95];
   const sandShade = [0.88, 0.95, 1.0, 1.07];
   for (var s = 0; s < 4; s++) {
-    lut[Cell.wall * 4 + s] = _abgr(wallRgb, wallShade[s]);
-    lut[Cell.cork * 4 + s] = _abgr(corkRgb, wallShade[s]);
-    lut[Cell.gate * 4 + s] = _abgr(gateRgb, s.isEven ? 1.0 : 0.85); // striped
+    lut[Cell.wall * 8 + s] = _abgr(wallRgb, wallShade[s]);
+    lut[Cell.cork * 8 + s] = _abgr(corkRgb, wallShade[s]);
+    lut[Cell.gate * 8 + s] = _abgr(gateRgb, s.isEven ? 1.0 : 0.85); // striped
     for (final c in SandColor.values) {
-      lut[c.cellType * 4 + s] = _abgr(c.rgb, sandShade[s]);
+      lut[c.cellType * 8 + s] = _abgr(c.rgb, sandShade[s] * 1.04); // top layer catches the light
+      lut[c.cellType * 8 + 4 + s] = _abgr(c.rgb, sandShade[s] * 0.93); // grains under sand sit in shadow
       // Filters: translucent mesh in their color.
-      lut[Cell.filterFor(c.cellType) * 4 + s] = _abgr(c.rgb, 1.0, s.isEven ? 0xD0 : 0x70);
+      lut[Cell.filterFor(c.cellType) * 8 + s] = _abgr(c.rgb, 1.0, s.isEven ? 0xD0 : 0x70);
     }
   }
   return lut;
 }
 
 void renderPixels(SandSim sim, Uint32List out) {
-  final cells = sim.cells, shade = sim.shade, lut = colorLut;
+  final cells = sim.cells, shade = sim.shade, lut = colorLut, w = sim.width;
   for (var i = 0; i < cells.length; i++) {
-    out[i] = lut[(cells[i] << 2) | shade[i]];
+    final t = cells[i];
+    final covered = t >= Cell.firstSand && i >= w && cells[i - w] >= Cell.firstSand ? 4 : 0;
+    out[i] = lut[(t << 3) | covered | shade[i]];
   }
 }

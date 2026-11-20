@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../services/audio.dart';
 import '../meta/album.dart';
 import '../meta/progress.dart';
 import 'components.dart';
@@ -136,6 +137,7 @@ class _AlbumPictureScreenState extends State<AlbumPictureScreen> with SingleTick
     _queue = [for (final t in revealed) if (!progress.data.seenTiles.contains(tileKey(widget.index, t))) t]..sort();
     _shown = revealed.difference(_queue.toSet());
     // The whole reveal takes at most ~3 s, however many tiles are new.
+    if (_queue.isNotEmpty) audio.sfx(Sfx.reveal);
     if (_queue.isNotEmpty) _pour.duration = Duration(milliseconds: math.min(900, 2600 ~/ _queue.length));
     _next();
   }
