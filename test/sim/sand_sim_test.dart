@@ -110,6 +110,28 @@ void main() {
     expect(leftmost, lessThan(60));
   });
 
+  test('a half-full open box only pours out when tilted past 45°', () {
+    SandSim cup() {
+      final sim = SandSim(80, 80);
+      sim.fillRect(20, 60, 40, 2, Cell.wall); // floor
+      sim.fillRect(18, 30, 2, 32, Cell.wall); // left wall
+      sim.fillRect(60, 30, 2, 32, Cell.wall); // right wall (brim at y=30)
+      sim.fillRect(20, 45, 40, 15, Cell.firstSand); // half full
+      return sim;
+    }
+
+    int lostAt(double deg) {
+      final sim = cup()..setGravityDegrees(deg);
+      for (var t = 0; t < 1500; t++) {
+        sim.step();
+      }
+      return sim.lost.reduce((a, b) => a + b);
+    }
+
+    expect(lostAt(40), 0);
+    expect(lostAt(65), greaterThan(0));
+  });
+
   test('a falling stream follows the gravity angle', () {
     final sim = SandSim(200, 200);
     sim.set(100, 0, Cell.firstSand);
@@ -124,6 +146,77 @@ void main() {
     }
     final angle = math.atan2(x - 100, y) * 180 / math.pi;
     expect(angle, closeTo(30, 6));
+  });
+
+  /// Box split by a 2-cell blue filter; blue and yellow sand above it.
+  SandSim filterBox() {
+    final sim = SandSim(80, 80, seed: 5);
+    sim.fillRect(0, 77, 80, 3, Cell.wall);
+    sim.fillRect(0, 0, 3, 80, Cell.wall);
+    sim.fillRect(77, 0, 3, 80, Cell.wall);
+    sim.fillRect(3, 40, 74, 2, Cell.filterFor(Cell.firstSand)); // blue filter
+    sim.fillRect(10, 5, 30, 20, Cell.firstSand); // blue
+    sim.fillRect(42, 5, 30, 20, Cell.firstSand + 1); // yellow
+    return sim;
+  }
+
+  test('a filter passes only its own color', () {
+    final sim = filterBox();
+    final blue = sim.count[Cell.firstSand], yellow = sim.count[Cell.firstSand + 1];
+    run(sim, 600);
+    var blueBelow = 0, yellowBelow = 0;
+    for (var y = 42; y < 77; y++) {
+      for (var x = 0; x < 80; x++) {
+        if (sim.get(x, y) == Cell.firstSand) blueBelow++;
+        if (sim.get(x, y) == Cell.firstSand + 1) yellowBelow++;
+      }
+    }
+    expect(yellowBelow, 0);
+    // Blue trapped on top of the yellow layer can't reach the filter: that's the design.
+    expect(blueBelow, greaterThan(blue * 0.9));
+    expect(sim.count[Cell.firstSand + 1], yellow);
+    expect(sim.grains, blue + yellow); // filter hops never create or destroy sand
+  });
+
+  test('sleeping equivalence holds with filter hops', () {
+    final sleepy = filterBox(), awake = filterBox()..alwaysAwake = true;
+    for (var t = 0; t < 500; t++) {
+      final g = t > 150 && t < 300 ? 0.0 : script(t);
+      sleepy.setGravityDegrees(g);
+      awake.setGravityDegrees(g);
+      sleepy.step();
+      awake.step();
+    }
+    expect(sleepy.stateHash(), awake.stateHash());
+  });
+
+  test('a closed gate holds sand; opening it lets sand fall', () {
+    final sim = SandSim(40, 60);
+    sim.fillRect(0, 0, 2, 22, Cell.wall);
+    sim.fillRect(38, 0, 2, 22, Cell.wall);
+    sim.fillRect(2, 20, 36, 2, Cell.gate);
+    sim.fillRect(10, 5, 20, 15, Cell.firstSand);
+    for (var t = 0; t < 100; t++) {
+      sim.step();
+    }
+    expect(sim.lost.reduce((a, b) => a + b), 0);
+    sim.replaceInRect(2, 20, 36, 2, Cell.gate, Cell.empty);
+    for (var t = 0; t < 200; t++) {
+      sim.step();
+    }
+    expect(sim.lost.reduce((a, b) => a + b), greaterThan(0));
+  });
+
+  test('per-type counts track spawns, overwrites and losses', () {
+    final sim = SandSim(30, 30);
+    sim.fillRect(5, 5, 10, 10, Cell.firstSand + 2);
+    expect(sim.count[Cell.firstSand + 2], 100);
+    sim.fillRect(5, 5, 10, 1, Cell.wall); // overwrite a row with wall
+    expect(sim.count[Cell.firstSand + 2], 90);
+    for (var t = 0; t < 200; t++) {
+      sim.step();
+    }
+    expect(sim.count[Cell.firstSand + 2] + sim.lost[Cell.firstSand + 2], 90);
   });
 
   test('gravity is clamped to ±70° and quantized', () {

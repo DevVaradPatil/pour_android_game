@@ -25,15 +25,16 @@ enum SandColor {
   static SandColor ofCell(int type) => values[type - Cell.firstSand];
 }
 
-const int wallRgb = 0xE9DCC6;
+const int wallRgb = 0xE9DCC6, corkRgb = 0xC08A55, gateRgb = 0x8C7B6B;
 
 /// Index = type * 4 + shade. Values are RGBA8888 read as a little-endian
 /// uint32 (0xAABBGGRR). Empty = transparent so the background shows through.
 final Uint32List colorLut = _buildLut();
 
-int _abgr(int rgb, double k) {
-  int ch(int shift) => (((rgb >> shift) & 0xFF) * k).round().clamp(0, 255);
-  return 0xFF000000 | (ch(0) << 16) | (ch(8) << 8) | ch(16);
+int _abgr(int rgb, double k, [int alpha = 0xFF]) {
+  // Premultiplied, as decodeImageFromPixels expects for translucent pixels.
+  int ch(int shift) => (((rgb >> shift) & 0xFF) * k * alpha / 255).round().clamp(0, 255);
+  return (alpha << 24) | (ch(0) << 16) | (ch(8) << 8) | ch(16);
 }
 
 Uint32List _buildLut() {
@@ -42,8 +43,12 @@ Uint32List _buildLut() {
   const sandShade = [0.88, 0.95, 1.0, 1.07];
   for (var s = 0; s < 4; s++) {
     lut[Cell.wall * 4 + s] = _abgr(wallRgb, wallShade[s]);
+    lut[Cell.cork * 4 + s] = _abgr(corkRgb, wallShade[s]);
+    lut[Cell.gate * 4 + s] = _abgr(gateRgb, s.isEven ? 1.0 : 0.85); // striped
     for (final c in SandColor.values) {
       lut[c.cellType * 4 + s] = _abgr(c.rgb, sandShade[s]);
+      // Filters: translucent mesh in their color.
+      lut[Cell.filterFor(c.cellType) * 4 + s] = _abgr(c.rgb, 1.0, s.isEven ? 0xD0 : 0x70);
     }
   }
   return lut;

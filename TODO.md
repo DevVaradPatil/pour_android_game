@@ -25,6 +25,11 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
 - [ ] **A real low-end Android phone** (2020-era, 3–4 GB RAM, e.g. Helio G-series) with USB debugging on. Needed for the performance gate. (Phase 1, again in 7 and 10)
 - [ ] At least one more real Android phone, ideally a different maker, for tilt-feel calibration. (Phase 1)
 - [ ] **Toy test:** hand the Phase 1 build to 5 people with no instructions and note whether they keep playing past 2 minutes. (End of Phase 1)
+- [ ] **Play levels 1–4 on your phone** (dist/pour-phase3-arm64.apk) and report:
+  - Does tilting past ~45° to pour feel right? Sand now pours over lips and out of uncorked jars at that tilt. The sandbox shows it too.
+  - Is level 1 obvious without help?
+  - Do the valve and filter read clearly?
+  This is the last feel check before Phase 4 builds 60 levels on this physics. (Phase 3)
 - [ ] Playtest L1–L20 on a real phone and report where you got stuck or bored. (Phase 4)
 
 ## Accounts & credentials (store secrets outside the repo; add the path here, not the value)

@@ -146,20 +146,28 @@ Build the GDD §14 cellular automaton and nothing else.
 **Tests:** golden tests of the component gallery; contrast check (text ≥ 4.5:1) as a unit test over the token pairs.
 **Gate:** icon, splash and gallery verified on emulator (light/dark system theme both fine; game is always its own theme).
 
-### Phase 3 — Core puzzle: jars, corks, level format `[ ]`
-- [ ] Level format: PNG at grid res (palette-mapped colors → cell types) + JSON (jars: rect, target color, fill line, purity threshold; valves; filters; seed; sand budget; star thresholds)
-- [ ] Loader + `tool/level_check.dart` validator
-- [ ] Jar: counts grains by color inside its rect; fill line; purity; **cork** once fill + purity reached → jar becomes solid wall (sand can't leave)
-- [ ] Uncorked jars spill when tilted (falls out of the sim naturally — verify it does)
-- [ ] Void edges: grains leaving the field are counted as spill
-- [ ] Win (all corked), soft lose ("Out of sand": remaining loose sand per color < needed), Retry
-- [ ] Stars (GDD §6), live spill meter
-- [ ] Elements: funnel (just walls), **valve hopper** (tap to toggle), **color filter** (pass-through only for its color)
-- [ ] In-game **replay recorder** (debug builds): records tilt + taps per tick; save as `NNN.replay.json`
-- [ ] Game HUD: pause, recenter, retry, spill meter, jar indicators
+### Phase 3 — Core puzzle: jars, corks, level format `[x]`
+- [x] Level format: **JSON shape lists** (`lib/level/level.dart`: rect/line/circle walls, sand, jars, valves, filters, star overrides) instead of PNG: easier to generate, diff and validate. PNG import can come later if a human designer wants to paint levels
+- [x] Validation (`Level.problems()`): bounds, jar size, label room, fill ≤ 0.85, filter ≤ 2 thick, sand budget per color
+- [x] Rules engine (`lib/level/level_run.dart`, pure Dart): jar fill + purity → **cork** (top row sealed); void = spill; win; **out of sand** (a color short, *or* too few grains left overall to reach fill lines; the second check came from a test that hung); stars; result frozen at the win
+- [x] Sim additions: cork, valve gate, color filter cells (matching grains hop through ≤ 2 filter cells), per-type counts, wake radius 3
+- [x] **Physics fix:** sand never moved up the screen, so it could never pour over a lip or out of a jar. Now ledge moves may go up-screen when they're still downhill relative to gravity (only past 45° tilt), and real falls always win over ledge moves (fixed a "fountain" artefact)
+- [x] Slow-mo: hold anywhere = 1 substep instead of 3 (unlimited for now; the limit comes with boosters, Phase 8). Recorded in replays
+- [x] Replays: `[tick, kind, value]` events (gravity half-degrees, valve toggles, slow-mo); deterministic re-play; in-app "Save replay (dev)" writes to app external files (`adb pull /sdcard/Android/data/com.pourgame.pour_sand_game/files/replays/`)
+- [x] Tools: `tool/level_check.dart` (validate + play every solution), `tool/solve_level.dart` (brute-forces 1- and 2-move tilt scripts; **the number of winning scripts measures how forgiving a level is**), `tool/level_preview_test.dart` (contact sheet of a replay → `build/level_previews/`)
+- [x] Game screen: fill lines, jar glyph + progress ring (red = purity too low), corked check, valve buttons, hint, spill meter with 3★ line, pause / win / out-of-sand cards, next/replay/retry
+- [x] Home screen: wordmark + level list + Play (next unbeaten). Stars are in memory until Phase 5
+- [x] Levels 001 First Pour (tilt), 002 Two Colors, 003 Valve, 004 Filter, each with a 3★ solution
 
-**Tests:** jar/cork/purity/star unit tests; filter & valve rule tests; loader round-trip; replay determinism (record → replay → same final hash).
-**Gate:** a hand-made test level is playable start→win→stars on emulator with scripted tilt; replay of it passes headless.
+**Results (2026-11-20):** 41 tests (incl. every level's solution replay via `test/level/levels_test.dart`). On the emulator: L1 3★ by tilt, L2 3★ (right then left), L3 3★ by tapping the valve, L4 filter sorting visible, out-of-sand card + retry, pause card, home progress. Bench 1.18 ms/step.
+
+**Level-design rules learned (apply in Phase 4):**
+1. A stream must land on a jar's **uphill** side. Past ~38° of tilt, sand stacks up the jar's downhill wall and spills over the brim before the fill line, so land it far from that wall.
+2. A fill line must be reachable **at the tilt used to pour**. Size jars to the sand that actually arrives (`solve_level` shows what it reaches).
+3. Sand on a flat shelf holds below ~35° and slides above it; containers with lips only pour past 45°. Use shelves for gentle early levels and lips for "tilt hard" levels.
+4. Filters sort a **thin stream landing on a resting filter**. An avalanche sliding over a filter doesn't sort (only its bottom layer touches it).
+5. Surplus sand piles on top of a corked jar and spills when you tilt later; budget it, or relax that level's `stars.spill`.
+6. Target forgiveness for tutorial levels: ≥ 30 winning one-move scripts (L1 has 32).
 
 ### Phase 4 — Content: World 1 (60 levels) `[ ]`
 - [ ] Remaining MVP elements: **mixer** (2 primaries → secondary), **splitter**, **fan** (GDD's first-20 list uses splitter at L15 and fan at L18, though MVP §16 omits them — see TODO decision; both are cheap)
@@ -296,7 +304,7 @@ Screenshot (Git Bash; PowerShell `>` corrupts binary): `MSYS_NO_PATHCONV=1 adb s
 | Dart sim/render too slow on low-end phones | Measured in Phase 1 before any content; 4 ordered fallbacks; pure-Dart `sim/` boundary keeps the FFI swap contained |
 | Emulator perf ≠ real perf | Emulator only for function + trends; real low-end phone gate (owner) in Phases 1, 7, 10 |
 | Emulator has ~470 MB free; debug APK (139 MB) won't install | Use profile builds; owner can wipe/enlarge the AVD (TODO.md) to get hot-reload debug runs |
-| Emulator renders at 30 fps regardless of load | Treat emulator fps as functional only; use the overlay's `ticks` (must stay 60) and `tool/bench_sim.dart` as the perf signal until a real phone is connected |
+| Emulator fps varies (30 vsync after a long session, 60 vsync / ~54 fps on a fresh boot) | Treat emulator fps as a rough signal; use the overlay's `ticks` (must stay 60), `tool/bench_sim.dart`, and a real phone |
 | Levels solvable by random shaking | Noisy-tilt bot test in Phase 4 |
 | Tilt feel differs by device | Calibration knobs (sensitivity, dead zone, invert) + touch-tilt; owner tests on 2+ phones |
 | Play closed-testing requirement delays launch | Start recruiting 12+ testers during Phase 8 (TODO.md) |

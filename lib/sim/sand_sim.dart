@@ -9,16 +9,23 @@ import 'dart:typed_data';
 abstract final class Cell {
   static const int empty = 0;
   static const int wall = 1;
-  static const int firstSand = 2;
-  static const int sandColors = 8; // types 2..9
+  static const int cork = 2; // seals a finished jar
+  static const int gate = 3; // closed valve
+  static const int firstFilter = 4; // 4..11: lets only the matching sand color through
+  static const int firstSand = 12;
+  static const int sandColors = 8; // types 12..19
+  static const int typeCount = firstSand + sandColors;
   static bool isSand(int t) => t >= firstSand;
+  static bool isFilter(int t) => t >= firstFilter && t < firstSand;
+  static int filterFor(int sandType) => sandType - firstSand + firstFilter;
 }
 
 class SandSim {
   SandSim(this.width, this.height, {this.seed = 1, this.reposeDeg = 35})
       : cells = Uint8List(width * height),
         shade = Uint8List(width * height),
-        lost = Int32List(Cell.firstSand + Cell.sandColors),
+        lost = Int32List(Cell.typeCount),
+        count = Int32List(Cell.typeCount),
         _stamp = Uint32List(width * height),
         _cw = (width + _cs - 1) >> _cb,
         _ch = (height + _cs - 1) >> _cb {
@@ -48,6 +55,9 @@ class SandSim {
 
   /// Grains that left the field, per sand type.
   final Int32List lost;
+
+  /// Grains currently on the field, per sand type.
+  final Int32List count;
 
   /// When true every chunk is processed every step (tests compare against sleeping).
   bool alwaysAwake = false;
@@ -96,8 +106,10 @@ class SandSim {
       final dot = (_dx[k] * gx + _dy[k] * gy) / len;
       if (dot > _reposeSin) {
         _allowed |= 1 << k; // steep enough to slide
-      } else if (dot > 0 && _dy[k] >= 0) {
-        _ledge |= 1 << k; // shallow but downhill: only off a ledge (see _try)
+      } else if (dot > 0) {
+        // Shallow but downhill: only off a ledge (see _try). Past 45° of tilt this
+        // includes up-screen diagonals, which is how sand pours over lips and out of jars.
+        _ledge |= 1 << k;
       }
     }
     _sweep = gx > 0.01 ? -1 : (gx < -0.01 ? 1 : 0);
@@ -114,8 +126,14 @@ class SandSim {
     final i = y * width + x;
     final old = cells[i];
     if (old == type) return;
-    if (Cell.isSand(old)) _grains--;
-    if (Cell.isSand(type)) _grains++;
+    if (Cell.isSand(old)) {
+      _grains--;
+      count[old]--;
+    }
+    if (Cell.isSand(type)) {
+      _grains++;
+      count[type]++;
+    }
     cells[i] = type;
     shade[i] = _hash(x, y, 0x5EED) & 3;
     _wake(x, y);
@@ -189,38 +207,59 @@ class SandSim {
     if (cells[i] < Cell.firstSand || _stamp[i] == t) return;
     final r = _hash(x, y, t);
     final p = (r & 0xFFFF) < _p2 ? _k2 : _k1;
-    if (_try(i, x, y, p, t)) return;
     final a = (r & 0x10000) == 0 ? 1 : -1;
-    if (_try(i, x, y, (p + a) & 7, t)) return;
-    if (_try(i, x, y, (p - a) & 7, t)) return;
     final b = (r & 0x20000) == 0 ? 2 : -2;
-    if (_try(i, x, y, (p + b) & 7, t)) return;
-    _try(i, x, y, (p - b) & 7, t);
+    // Real falls/slides first; a ledge move only when no falling move exists,
+    // otherwise grains pick shallow (even up-screen) moves over free falls.
+    for (final ledge in const [false, true]) {
+      if (_try(i, x, y, p, t, ledge) ||
+          _try(i, x, y, (p + a) & 7, t, ledge) ||
+          _try(i, x, y, (p - a) & 7, t, ledge) ||
+          _try(i, x, y, (p + b) & 7, t, ledge) ||
+          _try(i, x, y, (p - b) & 7, t, ledge)) {
+        return;
+      }
+    }
   }
 
-  bool _try(int i, int x, int y, int k, int t) {
+  bool _try(int i, int x, int y, int k, int t, bool ledge) {
     final bit = 1 << k;
-    if ((_allowed & bit) == 0 && (_ledge & bit) == 0) return false;
+    if (((ledge ? _ledge : _allowed) & bit) == 0) return false;
     final nx = x + _dx[k], ny = y + _dy[k];
-    if ((_allowed & bit) == 0 && !_unsupported(nx, ny)) return false;
+    if (ledge && !_unsupported(nx, ny)) return false;
     if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
       // Off the field = the void: the grain is lost.
       lost[cells[i]]++;
+      count[cells[i]]--;
       cells[i] = Cell.empty;
       _grains--;
       moved++;
       _wake(x, y);
       return true;
     }
-    final j = ny * width + nx;
-    if (cells[j] != Cell.empty) return false;
+    var j = ny * width + nx;
+    var tx = nx, ty = ny;
+    final target = cells[j];
+    if (target != Cell.empty) {
+      // A matching filter is see-through: hop over it (≤ 2 cells thick) into the space beyond.
+      final f = Cell.filterFor(cells[i]);
+      if (target != f) return false;
+      var hops = 0;
+      do {
+        tx += _dx[k];
+        ty += _dy[k];
+        if (tx < 0 || ty < 0 || tx >= width || ty >= height) return false;
+        j = ty * width + tx;
+      } while (cells[j] == f && ++hops < 2);
+      if (cells[j] != Cell.empty) return false;
+    }
     cells[j] = cells[i];
     shade[j] = shade[i];
     cells[i] = Cell.empty;
     _stamp[j] = t;
     moved++;
     _wake(x, y);
-    _wake(nx, ny);
+    _wake(tx, ty);
     return true;
   }
 
@@ -228,7 +267,7 @@ class SandSim {
   /// of the two directions bracketing gravity. This lets cliffs that are steeper
   /// than the angle of repose relative to a tilted gravity collapse, which pure
   /// 8-direction moves can't express. A grain's rest decision therefore reads
-  /// cells up to 2 away, hence the radius-2 wake below.
+  /// cells up to 2 away (3 with a filter hop), hence the radius-3 wake below.
   bool _unsupported(int x, int y) {
     if (x < 0 || y < 0 || x >= width || y >= height) return true;
     if (cells[y * width + x] != Cell.empty) return false;
@@ -238,10 +277,10 @@ class SandSim {
   bool _free(int x, int y) =>
       x < 0 || y < 0 || x >= width || y >= height || cells[y * width + x] == Cell.empty;
 
-  /// Wakes every chunk touching the 5x5 neighbourhood of (x, y), for this step and the next.
+  /// Wakes every chunk touching the 7x7 neighbourhood of (x, y), for this step and the next.
   void _wake(int x, int y) {
-    var cx0 = (x - 2) >> _cb, cx1 = (x + 2) >> _cb;
-    var cy0 = (y - 2) >> _cb, cy1 = (y + 2) >> _cb;
+    var cx0 = (x - 3) >> _cb, cx1 = (x + 3) >> _cb;
+    var cy0 = (y - 3) >> _cb, cy1 = (y + 3) >> _cb;
     if (cx0 < 0) cx0 = 0;
     if (cy0 < 0) cy0 = 0;
     if (cx1 >= _cw) cx1 = _cw - 1;
@@ -251,6 +290,26 @@ class SandSim {
         final c = cy * _cw + cx;
         _cur[c] = 1;
         _next[c] = 1;
+      }
+    }
+  }
+
+  /// Per-type cell counts inside a rect (jar contents). [out] is zeroed first.
+  void countRect(int x0, int y0, int w, int h, Int32List out) {
+    out.fillRange(0, out.length, 0);
+    for (var y = math.max(0, y0); y < math.min(height, y0 + h); y++) {
+      final row = y * width;
+      for (var x = math.max(0, x0); x < math.min(width, x0 + w); x++) {
+        out[cells[row + x]]++;
+      }
+    }
+  }
+
+  /// Sets cells of [from] type inside a rect to [to] (open/close valves).
+  void replaceInRect(int x0, int y0, int w, int h, int from, int to) {
+    for (var y = y0; y < y0 + h; y++) {
+      for (var x = x0; x < x0 + w; x++) {
+        if (x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] == from) set(x, y, to);
       }
     }
   }

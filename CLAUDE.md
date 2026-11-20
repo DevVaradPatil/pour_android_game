@@ -20,19 +20,21 @@ dart compile exe tool/bench_sim.dart -o build/bench.exe; ./build/bench.exe   # s
 ```
 - Emulator: AVD `Medium_Phone_API_36.1` (x86_64). Its data partition is nearly full, so the **debug APK doesn't install**. Use profile builds until TODO.md's storage item is resolved.
 - `android/gradle.properties` has `kotlin.incremental=false`: the project is on E: and the pub cache on C:, which breaks Kotlin incremental caches ("Could not close incremental caches").
-- The emulator only delivers 30 vsyncs/s to Flutter even when idle, so emulator fps isn't a perf signal. Use the dev overlay's `ticks` (should be 60) and the bench.
+- Emulator fps is only a rough signal. After a long session it dropped to 30 vsyncs/s even when idle; a fresh boot gives 60 vsync and ~54 fps with sand moving. Trust the overlay's `ticks` (should be 60), the bench, and a real phone.
+- Level workflow: edit `assets/levels/w1/NNN.json` (+ add it to `assets/levels/levels.json`). Then `dart compile exe tool/solve_level.dart -o build/solve.exe; ./build/solve.exe w1/NNN [--two] [--valves 0@40] [--write]` to find and record a solution, `flutter test tool/level_preview_test.dart --dart-define=LEVEL=w1/NNN` to *look* at it (`build/level_previews/`), and `dart run tool/level_check.dart [-v] [w1/NNN]` to validate. Follow the level-design rules in PLAN.md Phase 3.
 - Brand pipeline: the logo is code (`lib/ui/brand.dart`). After changing it, run `flutter test tool/brand_export_test.dart; dart run flutter_launcher_icons; dart run flutter_native_splash:create`. The splash generator **rewrites AndroidManifest.xml and drops `screenOrientation`**; `test/platform_config_test.dart` catches that.
 - Golden: `flutter test test/ui/gallery_golden_test.dart --update-goldens` after intended UI changes. Goldens are rendered on Windows.
 - UI rules: use tokens from `lib/ui/tokens.dart` (`PourColors`, `Space`, `Radii`, `Motion`, `PourText`), never raw colors. Every sand color is `SandColor`; show its glyph wherever color carries meaning. `test/ui/palette_test.dart` enforces ΔE2000 ≥ 12.5 under colorblind simulation and WCAG AA for text tokens.
 - Screenshots: PowerShell `>` corrupts binary output. Use Git Bash: `MSYS_NO_PATHCONV=1 adb shell screencap -p /sdcard/s.png; adb pull /sdcard/s.png <dest>`.
 - "Done" means `flutter analyze` and `flutter test` are clean **and** the change has been checked on the emulator: install, launch, drive tilt if relevant, screenshot, and check logcat for errors.
 
-## Architecture (planned; see PLAN.md §1)
+## Architecture (see PLAN.md §1)
 - `lib/sim/sand_sim.dart` is a **pure Dart** cellular-automaton sand sim with no Flutter imports, a seeded RNG and a fixed 60 Hz step. It must stay deterministic: the same seed plus the same input stream gives an identical grid. Recorded level replays depend on this and serve as regression tests. The sim exposes counters (`moved`, `lost`, `grains`) and never calls out to audio, UI or anything else.
   - Randomness is a stateless hash of (x, y, tick, seed), and a grain's rest decision depends only on cells within 2 of it. That's why 16×16 chunks can sleep and still match processing everything exactly (`test/sim`). Keep both properties when adding elements, or widen the wake radius in `_wake`.
   - Moves: try the gravity direction (weighted between the two nearest of 8), then neighbours. A direction is allowed if it's within the repose cone. A shallow downhill direction is allowed only off a ledge (`_unsupported`).
   - Walls must be 4-connected (`line()` uses thickness ≥ 2), or sand leaks through diagonal gaps.
-- Levels are a PNG at grid resolution (pixel color → cell type) plus a JSON sidecar (jars, valves, thresholds, seed) in `assets/levels/`. Each level ships with a solution replay that `tool/level_check.dart` verifies.
+- Levels are JSON shape lists (`lib/level/level.dart`). `LevelRun` (`lib/level/level_run.dart`) is the pure-Dart rules layer: jars, corks, valves, win and out-of-sand, stars, replay recording. The app and the tools share it. Every level ships with `NNN.replay.json`; `test/level/levels_test.dart` replays them all, so a sim change that breaks a level fails `flutter test`.
+- Cell types: 0 empty, 1 wall, 2 cork, 3 gate (closed valve), 4..11 filters, 12..19 sand. `Cell.isSand(t)` is `t >= 12`. Add new non-sand types below `firstSand`.
 - Game loop: `Ticker` + `CustomPainter`. The grid is written to one RGBA buffer, then one `ui.Image`, then one nearest-neighbour quad. There's no game engine package, and state is plain `ChangeNotifier`/`ValueNotifier`.
 - `lib/services/` holds thin wrappers (audio, haptics, ads, IAP, analytics) so tests can use fakes. Ads must never block progress.
 - Portrait only. It's locked in `AndroidManifest.xml` and `ios/Runner/Info.plist` (with `UIRequiresFullScreen`).

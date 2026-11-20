@@ -1,0 +1,49 @@
+{
+  "id": "w1_001",
+  "name": "First Pour",
+  "seed": 1,
+  "hint": "Tilt your phone to pour",
+  "walls": [
+    {
+      "rect": [
+        20,
+        60,
+        3,
+        93
+      ]
+    },
+    {
+      "line": [
+        21,
+        150,
+        150,
+        150
+      ],
+      "t": 3
+    }
+  ],
+  "sand": [
+    {
+      "color": "blue",
+      "rect": [
+        23,
+        110,
+        77,
+        38
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "blue",
+      "rect": [
+        157,
+        175,
+        80,
+        60
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    }
+  ]
+}

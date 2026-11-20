@@ -1,0 +1,20 @@
+{
+  "id": "w1_002",
+  "name": "Two Colors",
+  "seed": 2,
+  "hint": "Each jar wants its own color",
+  "walls": [
+    {"rect": [20, 40, 3, 73]},
+    {"rect": [20, 110, 110, 3]},
+    {"rect": [217, 230, 3, 73]},
+    {"rect": [110, 300, 110, 3]}
+  ],
+  "sand": [
+    {"color": "blue", "rect": [23, 72, 58, 38]},
+    {"color": "yellow", "rect": [160, 262, 57, 38]}
+  ],
+  "jars": [
+    {"color": "blue", "rect": [155, 145, 80, 50], "fill": 0.3, "purity": 0.8},
+    {"color": "yellow", "rect": [5, 335, 80, 50], "fill": 0.3, "purity": 0.8}
+  ]
+}

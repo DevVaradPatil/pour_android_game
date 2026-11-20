@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  path_provider: ^2.1.6
   sensors_plus: ^7.1.1
 
 dev_dependencies:
@@ -55,6 +56,8 @@ flutter:
   assets:
     - assets/fonts/OFL-Fredoka.txt
     - assets/fonts/OFL-Nunito.txt
+    - assets/levels/
+    - assets/levels/w1/
   fonts:
     - family: Fredoka
       fonts:
