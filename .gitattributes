@@ -1,0 +1,6 @@
+# Keep text files LF on every OS (tools here write LF; avoids CRLF churn on Windows).
+* text=auto eol=lf
+*.png binary
+*.ttf binary
+*.jar binary
+*.apk binary

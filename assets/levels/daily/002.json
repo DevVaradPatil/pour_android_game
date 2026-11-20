@@ -1,0 +1,68 @@
+{
+  "id": "d_002",
+  "name": "Two Ways",
+  "seed": 2,
+  "concept": "Fill one, cork it, then the other",
+  "walls": [
+    {
+      "rect": [
+        60,
+        140,
+        120,
+        3
+      ]
+    },
+    {
+      "rect": [
+        119,
+        105,
+        3,
+        38
+      ]
+    }
+  ],
+  "sand": [
+    {
+      "color": "green",
+      "rect": [
+        82,
+        118,
+        37,
+        22
+      ]
+    },
+    {
+      "color": "green",
+      "rect": [
+        122,
+        118,
+        37,
+        22
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "green",
+      "rect": [
+        4,
+        165,
+        58,
+        45
+      ],
+      "fill": 0.2,
+      "purity": 0.8
+    },
+    {
+      "color": "green",
+      "rect": [
+        178,
+        165,
+        58,
+        45
+      ],
+      "fill": 0.2,
+      "purity": 0.8
+    }
+  ]
+}

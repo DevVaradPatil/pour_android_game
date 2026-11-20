@@ -1,0 +1,127 @@
+{
+  "id": "d_021",
+  "name": "Mirror Chute",
+  "seed": 21,
+  "concept": "One chute, a filter at the end",
+  "walls": [
+    {
+      "rect": [
+        90,
+        20,
+        3,
+        73
+      ]
+    },
+    {
+      "rect": [
+        33,
+        20,
+        3,
+        73
+      ]
+    },
+    {
+      "rect": [
+        36,
+        90,
+        54,
+        3
+      ]
+    },
+    {
+      "line": [
+        35,
+        110,
+        125,
+        200
+      ],
+      "t": 3
+    },
+    {
+      "rect": [
+        200,
+        190,
+        3,
+        42
+      ]
+    },
+    {
+      "rect": [
+        94,
+        230,
+        11,
+        2
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        53,
+        90,
+        20,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "filters": [
+    {
+      "color": "orange",
+      "rect": [
+        105,
+        230,
+        95,
+        2
+      ]
+    }
+  ],
+  "sand": [
+    {
+      "color": "orange",
+      "rect": [
+        63,
+        40,
+        27,
+        50
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        36,
+        40,
+        27,
+        50
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "orange",
+      "rect": [
+        107,
+        280,
+        93,
+        45
+      ],
+      "fill": 0.25,
+      "purity": 0.8
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        10,
+        265,
+        70,
+        50
+      ],
+      "fill": 0.3,
+      "purity": 0.7
+    }
+  ],
+  "stars": {
+    "purity": 0.9,
+    "spill": 0.25
+  }
+}

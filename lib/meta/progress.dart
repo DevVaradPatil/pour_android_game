@@ -2,6 +2,8 @@
 // Every mutation saves and notifies, so screens just listen.
 import 'package:flutter/foundation.dart';
 
+import '../game/palette.dart';
+import 'daily.dart';
 import 'economy.dart';
 import 'save_data.dart';
 import 'save_store.dart';
@@ -44,6 +46,64 @@ class Progress extends ChangeNotifier {
     data.coins += chestCoins;
     _changed();
     return chestCoins;
+  }
+
+  /// Days up to the last completed one count as done, so moving the clock
+  /// back can't replay old jars for coins or streak.
+  bool dailyDone(int day) => data.daily.last >= day;
+
+  /// A Daily Jar was won. Keeps the day's best score; the first win of the day
+  /// pays [dailyCoins] and advances the daily streak (spending the weekly
+  /// freeze for a single missed day).
+  DailyOutcome recordDaily(
+    int day, {
+    required int score,
+    required int stars,
+    required double purity,
+    required int ticks,
+    required List<(SandColor, double)> jars,
+  }) {
+    final first = !dailyDone(day);
+    final usedFreeze = first && data.daily.complete(day);
+    final prev = data.dailyResult;
+    final prevScore = prev != null && prev['n'] == day ? (prev['score'] as num).toInt() : -1;
+    final best = score > prevScore;
+    if (best) {
+      data.dailyResult = {
+        'n': day,
+        'score': score,
+        'stars': stars,
+        'purity': purity,
+        'ticks': ticks,
+        'jars': [for (final (c, p) in jars) [c.name, p]],
+      };
+    }
+    if (first) data.coins += dailyCoins;
+    _changed();
+    return DailyOutcome(
+      first: first,
+      newBest: best,
+      coins: first ? dailyCoins : 0,
+      streak: data.daily.streak,
+      usedFreeze: usedFreeze,
+    );
+  }
+
+  /// Share text for [day]'s best result, or null if it isn't done.
+  String? dailyShare(int day) {
+    final r = data.dailyResult;
+    if (r == null || r['n'] != day) return null;
+    return shareText(
+      number: day,
+      stars: (r['stars'] as num).toInt(),
+      purity: (r['purity'] as num).toDouble(),
+      ticks: (r['ticks'] as num).toInt(),
+      jars: [
+        for (final j in (r['jars'] as List).cast<List>())
+          (SandColor.values.byName(j[0] as String), (j[1] as num).toDouble()),
+      ],
+      streak: data.daily.current(day),
+    );
   }
 
   void markTileSeen(String key) {

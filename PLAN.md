@@ -199,15 +199,24 @@ Bugs found and fixed along the way: closing a valve mid-flow left holes (the hop
 
 **Results (2026-11-20):** 120 tests. Emulator gate: on a fresh save, autoplayed levels 1–11, then **force-stopped mid-level 12** and relaunched: 31 stars and 370 coins, exactly matching the economy rules; chest ready, then opened (+50); album showed picture 1 complete and picture 2 at 1/10 with the pour animation; a settings change survived a second kill.
 
-### Phase 6 — Daily Jar, streak, sharing, notifications `[ ]`
-- [ ] Daily Jar: same level worldwide **without a server** — pick from a hand-made daily pool (or a parametric generator) by `days since epoch (UTC)` + seed
-- [ ] Score = purity × speed; streak + one free weekly freeze
-- [ ] Share card: emoji grid + purity % + store link, via `share_plus`
-- [ ] Local notification: max 1/day, opt-in ("Your daily jar is ready" / "Streak ends in 2h")
-- [ ] Android 13+ `POST_NOTIFICATIONS` runtime permission, asked in context (not at first launch)
+### Phase 6 — Daily Jar, streak, sharing, notifications `[x]`
+- [x] Daily Jar with **no server**: a 30-jar pool (`assets/levels/daily/`, built and verified by `tool/build_levels.dart` as remixes of World 1 mechanics). The jar is chosen by the player's **local calendar date** (Wordle-style; DST-safe because it counts calendar days); #1 = 2026-11-20; the pool cycles
+- [x] Score 0–1000 = purity × speed (full speed within 1.5× the solution's time); the first daily win of the day pays 20 coins; the day's best result is kept; replays don't touch map stars or the album
+- [x] Daily streak with one automatic freeze per week (covers a single missed day); days at or before the last completed one count as done, so moving the clock back can't farm coins
+- [x] Share card via `share_plus`: "Daily Jar #N", stars, purity, time, one emoji row per jar, streak, store link
+- [x] Opt-in reminder ("Daily reminder" in settings, or offered on the daily win card): one inexact notification a day (no exact-alarm permission), today 7 pm if not played, else tomorrow 7 pm; rescheduled on launch and after a daily win; Android 13+ permission requested only when turned on
+- [x] Save v2 (+ migration test); `.gitattributes` keeps text files LF (stops CRLF churn on Windows)
+- [x] Dev: "+1 day" (day offset) and "Test reminder" on home; "Watch solution" works for dailies too
 
-**Tests:** date→level mapping across timezones/DST and day boundaries; streak/freeze logic; share text snapshot test.
-**Gate:** on emulator, change device date (`adb shell` / settings) → new daily, streak behaves; share sheet opens; notification fires.
+**Results (2026-11-20):** 163 tests (dates/DST, pool, score, streak/freeze, reminder time, share text, clock rollback, migration, all 30 daily solutions). Emulator gate, using the dev day offset because this Play Store emulator image can't change its date without root:
+- Daily #1 won: 1000 pts, 🔥1, +20; the share sheet showed the card text.
+- Stepped to #2 and won: 🔥2.
+- Skipped #3: the streak stayed alive (freeze available).
+- Won #4: "A streak freeze covered yesterday", 🔥3.
+- The test reminder posted about 10 s after the permission prompt.
+- The settings toggle scheduled exactly one alarm (tomorrow 19:00).
+
+**Known limits:** `flutter_local_notifications` pinned to 22.x (23.x needs compileSdk 37; see TODO.md toolchain item). The "streak ends in 2h" variant was dropped to keep one notification a day.
 
 ### Phase 7 — Juice: audio, haptics, camera `[ ]`
 - [ ] Sound list (see §4 Assets): granular sand hiss (volume/pitch follow active grain count & jar fill), cork thunk+pop, valve, filter, UI taps, star chime, album reveal, ambient music loop

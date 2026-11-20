@@ -7,11 +7,14 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../level/level.dart';
 import '../level/level_run.dart';
+import '../meta/daily.dart';
 import '../meta/economy.dart';
 import '../meta/progress.dart';
+import '../services/notifications.dart';
 import '../ui/brand.dart';
 import '../ui/components.dart';
 import '../ui/tokens.dart';
@@ -24,7 +27,14 @@ void haptic(Future<void> Function() feedback) {
 
 /// Plays `paths[index]` (paths relative to assets/levels/, e.g. "w1/001").
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key, required this.paths, required this.index, this.accelStream, this.autoplay = false});
+  const GameScreen({
+    super.key,
+    required this.paths,
+    required this.index,
+    this.accelStream,
+    this.autoplay = false,
+    this.daily,
+  });
 
   final List<String> paths;
   final int index;
@@ -33,6 +43,9 @@ class GameScreen extends StatefulWidget {
   /// Dev: play the recorded solution instead of reading input, log the result
   /// (`AUTOPLAY ...` in logcat) and move on to the next level.
   final bool autoplay;
+
+  /// Daily Jar number when this is the daily (scored, shared; no map stars).
+  final int? daily;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -50,6 +63,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   RunStatus _shown = RunStatus.playing;
   bool _paused = false;
   Reward? _reward; // what the last win paid
+  DailyOutcome? _dailyOutcome;
+  int _dailyScore = 0;
+  int _parTicks = 0; // the solution's length, for the daily score
   Replay? _auto; // drives input while watching a solution
   int _autoEvent = 0;
 
@@ -65,6 +81,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   Future<void> _load() async {
     final level = Level.fromJson(await rootBundle.loadString('assets/levels/$_path.json'));
     if (widget.autoplay) _auto = await _loadReplay();
+    if (widget.daily != null) _parTicks = (await _loadReplay()).ticks;
     if (!mounted) return;
     _level = level;
     _restart();
@@ -80,7 +97,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   void _restart() {
     // Restarting a level in progress counts as a retry: the win streak ends.
-    if (_run?.status == RunStatus.playing && (_run?.tick ?? 0) > 60 && _auto == null) progress.recordFail();
+    if (_run?.status == RunStatus.playing && (_run?.tick ?? 0) > 60 && _auto == null && widget.daily == null) {
+      progress.recordFail();
+    }
     setState(() {
       _run = LevelRun(_level!);
       _shown = RunStatus.playing;
@@ -131,10 +150,23 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _renderer.renderIfDirty(run.sim);
     if (run.status != _shown) {
       _shown = run.status;
-      if (run.status == RunStatus.won) {
+      final daily = widget.daily;
+      if (run.status == RunStatus.won && daily != null) {
+        _dailyScore = dailyScore(purity: run.avgPurity, ticks: run.tick, parTicks: _parTicks);
+        _dailyOutcome = progress.recordDaily(
+          daily,
+          score: _dailyScore,
+          stars: run.stars,
+          purity: run.avgPurity,
+          ticks: run.tick,
+          jars: [for (final j in run.jars) (j.def.color, j.purity)],
+        );
+        refreshReminder(); // today is done: move the reminder to tomorrow
+        haptic(HapticFeedback.mediumImpact);
+      } else if (run.status == RunStatus.won) {
         _reward = progress.recordWin(_path, run.stars, boss: (widget.index + 1) % 10 == 0);
         haptic(HapticFeedback.mediumImpact);
-      } else if (run.status == RunStatus.outOfSand) {
+      } else if (run.status == RunStatus.outOfSand && daily == null) {
         progress.recordFail();
       }
       setState(() {});
@@ -239,7 +271,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('LEVEL ${widget.index + 1}', style: PourText.label.copyWith(color: PourColors.textMuted)),
+                  Text(widget.daily != null ? 'DAILY JAR #${widget.daily}' : 'LEVEL ${widget.index + 1}',
+                      style: PourText.label.copyWith(color: PourColors.textMuted)),
                   Text(run.level.name, style: PourText.heading, overflow: TextOverflow.ellipsis),
                 ],
               ),
@@ -484,7 +517,65 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         if (!kReleaseMode) TextButton(onPressed: _watchSolution, child: const Text('Watch solution (dev)')),
       ]);
 
+  Future<void> _share() async {
+    final text = progress.dailyShare(widget.daily!);
+    if (text != null) await SharePlus.instance.share(ShareParams(text: text));
+  }
+
+  Future<void> _enableReminders() async {
+    final granted = await notifications.requestPermission();
+    progress.updateSettings((s) => s.reminders = granted);
+    await refreshReminder();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(granted ? "We'll remind you when tomorrow's jar is ready" : 'Notifications are off for Pour'),
+      ));
+      setState(() {});
+    }
+  }
+
+  Widget _dailyWonCard(LevelRun run) {
+    final o = _dailyOutcome;
+    return _card([
+      Text('Daily Jar #${widget.daily}', style: PourText.title),
+      const SizedBox(height: Space.l),
+      StarRow(stars: run.stars, size: 44),
+      const SizedBox(height: Space.m),
+      Text('$_dailyScore', style: PourText.display.copyWith(fontSize: 40)),
+      Text(o != null && !o.newBest ? 'points (best today is higher)' : 'points',
+          style: PourText.caption.copyWith(color: PourColors.textMuted)),
+      if (o != null) ...[
+        const SizedBox(height: Space.m),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('🔥 ${o.streak}-day streak', style: PourText.label.copyWith(color: PourColors.accent)),
+            if (o.coins > 0) ...[
+              const SizedBox(width: Space.m),
+              const Icon(Icons.monetization_on_rounded, color: PourColors.coin, size: 20),
+              Text(' +${o.coins}', style: PourText.number),
+            ],
+          ],
+        ),
+        if (o.usedFreeze)
+          Text('A streak freeze covered yesterday', style: PourText.caption.copyWith(color: PourColors.textMuted)),
+      ],
+      const SizedBox(height: Space.xl),
+      PourButton(label: 'Share', icon: Icons.ios_share_rounded, expand: true, onPressed: _share),
+      const SizedBox(height: Space.m),
+      PourButton(
+        label: 'Done',
+        style: PourButtonStyle.secondary,
+        expand: true,
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      if (!progress.settings.reminders)
+        TextButton(onPressed: _enableReminders, child: const Text('Remind me when the next jar is ready')),
+    ]);
+  }
+
   Widget _wonCard(LevelRun run) {
+    if (widget.daily != null) return _dailyWonCard(run);
     final hasNext = widget.index + 1 < widget.paths.length;
     return _card([
       Text('Level complete!', style: PourText.title),

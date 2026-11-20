@@ -3,11 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../game/game_screen.dart';
 import '../game/sand_screen.dart';
 import '../level/level_check.dart';
+import '../meta/daily.dart';
 import '../meta/progress.dart';
+import '../services/notifications.dart';
 import 'album_screen.dart';
 import 'brand.dart';
 import 'components.dart';
@@ -27,6 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   static const double _rowH = 104;
   late final Future<List<String>> _paths = rootBundle
       .loadString('assets/levels/levels.json')
+      .then(parseLevelIndex);
+  late final Future<List<String>> _dailyPool = rootBundle
+      .loadString('assets/levels/daily.json')
       .then(parseLevelIndex);
   final _scroll = ScrollController();
   bool _scrolledToCurrent = false;
@@ -55,6 +61,70 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     setState(() {});
   }
+
+  Future<void> _playDaily(List<String> pool, int day) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => GameScreen(paths: [dailyPath(day, pool)], index: 0, daily: day),
+      ),
+    );
+    setState(() {});
+  }
+
+  /// Today's Daily Jar: play it, or share your result once it's done.
+  Widget _dailyCard() => FutureBuilder<List<String>>(
+    future: _dailyPool,
+    builder: (context, snap) {
+      final pool = snap.data;
+      if (pool == null) return const SizedBox(height: 72);
+      final day = dailyNumber(dailyClock());
+      final done = progress.dailyDone(day);
+      final streak = progress.data.daily.current(day);
+      final r = progress.data.dailyResult;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(Space.l, Space.s, Space.l, 0),
+        child: PourCard(
+          padding: const EdgeInsets.fromLTRB(Space.l, Space.m, Space.m, Space.m),
+          child: Row(
+            children: [
+              const Icon(Icons.today_rounded, color: PourColors.accent, size: 32),
+              const SizedBox(width: Space.m),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('DAILY JAR #$day', style: PourText.label.copyWith(color: PourColors.textMuted)),
+                    Text(
+                      !done
+                          ? 'A new jar is ready'
+                          : (r != null && r['n'] == day ? '${'★' * ((r['stars'] as num).toInt())} ${r['score']} pts' : 'Done'),
+                      style: PourText.heading.copyWith(fontSize: 17),
+                    ),
+                    if (streak > 0)
+                      Text('🔥 $streak-day streak', style: PourText.caption.copyWith(color: PourColors.accent)),
+                  ],
+                ),
+              ),
+              done
+                  ? RoundIconButton(
+                      icon: Icons.ios_share_rounded,
+                      tooltip: 'Share daily result',
+                      onPressed: () {
+                        final text = progress.dailyShare(day);
+                        if (text != null) SharePlus.instance.share(ShareParams(text: text));
+                      },
+                    )
+                  : RoundIconButton(
+                      icon: Icons.play_arrow_rounded,
+                      tooltip: 'Play the Daily Jar',
+                      onPressed: () => _playDaily(pool, day),
+                    ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 
   void _push(Widget screen) => Navigator.of(
     context,
@@ -171,6 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+        _dailyCard(),
         const SizedBox(height: Space.s),
         Expanded(
           child: LayoutBuilder(
@@ -253,6 +324,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () => _play(paths, 0, autoplay: true),
                 child: const Text('Autoplay all'),
               ),
+                TextButton(
+                  onPressed: () => setState(() => debugDayOffset++),
+                  child: Text('+1 day (${debugDayOffset >= 0 ? '+' : ''}$debugDayOffset)'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await notifications.requestPermission();
+                    await notifications.schedule(
+                      DateTime.now().add(const Duration(seconds: 10)),
+                      'Your Daily Jar is ready',
+                      'Test reminder (dev)',
+                    );
+                  },
+                  child: const Text('Test reminder'),
+                ),
             ],
           ),
       ],

@@ -3,6 +3,9 @@
 const int starsPerChest = 20;
 const int chestCoins = 50;
 
+/// Coins for the first Daily Jar win of each day.
+const int dailyCoins = 20;
+
 /// Coins for a win: a first clear pays 10, every newly earned star pays 5,
 /// bosses pay double. Replays that don't improve pay nothing.
 int levelCoins({required int oldStars, required int newStars, required bool boss}) {
@@ -21,6 +24,18 @@ int streakBonus(int streak) => switch (streak) {
 
 /// Chests unlocked so far by total stars (one per [starsPerChest]).
 int chestsEarned(int totalStars) => totalStars ~/ starsPerChest;
+
+class DailyOutcome {
+  const DailyOutcome({
+    required this.first,
+    required this.newBest,
+    required this.coins,
+    required this.streak,
+    required this.usedFreeze,
+  });
+  final bool first, newBest, usedFreeze;
+  final int coins, streak;
+}
 
 class Reward {
   const Reward({this.levelCoins = 0, this.streakBonus = 0, this.streak = 0});

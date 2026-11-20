@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'game/play_kit.dart';
 import 'meta/progress.dart';
 import 'meta/save_store.dart';
+import 'services/notifications.dart';
 
 import 'ui/home_screen.dart';
 import 'ui/theme.dart';
@@ -14,6 +15,8 @@ Future<void> main() async {
   progress = Progress(SaveStore(await getApplicationSupportDirectory()));
   applyTiltSettings();
   runApp(const PourApp());
+  await notifications.init();
+  await refreshReminder();
 }
 
 class PourApp extends StatelessWidget {
