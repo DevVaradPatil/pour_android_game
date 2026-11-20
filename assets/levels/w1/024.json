@@ -1,0 +1,103 @@
+{
+  "id": "w1_024",
+  "name": "Wait For It",
+  "seed": 24,
+  "concept": "Let the valve finish before you tilt",
+  "walls": [
+    {
+      "rect": [
+        97,
+        20,
+        3,
+        43
+      ]
+    },
+    {
+      "rect": [
+        140,
+        20,
+        3,
+        43
+      ]
+    },
+    {
+      "rect": [
+        100,
+        60,
+        40,
+        3
+      ]
+    },
+    {
+      "rect": [
+        217,
+        190,
+        3,
+        45
+      ]
+    },
+    {
+      "rect": [
+        140,
+        232,
+        80,
+        3
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        110,
+        60,
+        20,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "sand": [
+    {
+      "color": "orange",
+      "rect": [
+        100,
+        30,
+        40,
+        30
+      ]
+    },
+    {
+      "color": "purple",
+      "rect": [
+        177,
+        208,
+        40,
+        24
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "orange",
+      "rect": [
+        95,
+        95,
+        50,
+        35
+      ],
+      "fill": 0.4,
+      "purity": 0.8
+    },
+    {
+      "color": "purple",
+      "rect": [
+        50,
+        260,
+        70,
+        32
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    }
+  ]
+}

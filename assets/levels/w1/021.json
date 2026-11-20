@@ -1,0 +1,84 @@
+{
+  "id": "w1_021",
+  "name": "Double Shelf",
+  "seed": 21,
+  "concept": "Two shelves pour the same way at once",
+  "walls": [
+    {
+      "rect": [
+        20,
+        20,
+        3,
+        45
+      ]
+    },
+    {
+      "rect": [
+        20,
+        62,
+        80,
+        3
+      ]
+    },
+    {
+      "rect": [
+        20,
+        220,
+        3,
+        45
+      ]
+    },
+    {
+      "rect": [
+        20,
+        262,
+        80,
+        3
+      ]
+    }
+  ],
+  "sand": [
+    {
+      "color": "blue",
+      "rect": [
+        23,
+        38,
+        40,
+        24
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        23,
+        238,
+        40,
+        24
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "blue",
+      "rect": [
+        120,
+        90,
+        70,
+        32
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        120,
+        290,
+        70,
+        32
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    }
+  ]
+}

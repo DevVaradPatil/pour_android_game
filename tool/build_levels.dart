@@ -45,6 +45,36 @@ List<J> funnel(int x0, int x1, int yTop, int cx, int nh, int yBottom) =>
 /// Inverted V that splits a falling stream.
 List<J> wedge(int cx, int y, int halfW, int h) => [line(cx, y, cx - halfW, y + h), line(cx, y, cx + halfW, y + h)];
 
+/// Merges level fragments: list values are concatenated.
+J merge(List<J> parts) {
+  final out = <String, Object?>{};
+  for (final p in parts) {
+    p.forEach((k, v) => out[k] = v is List ? [...((out[k] as List?) ?? const []), ...v] : v);
+  }
+  return out;
+}
+
+/// Compact shelf + jar (about 118 rows tall from [y]). The shelf holds below ~35°
+/// and pours toward the jar above it; [right] = pours right (mirrored otherwise).
+/// Pour with tilt(±44) for ~2 s.
+J tier(int y, String color, {bool right = true, double fill = 0.3, double purity = 0.8, int sandW = 40}) {
+  int mx(int x, int w) => right ? x : levelW - x - w;
+  return {
+    'walls': [rect(mx(20, 3), y, 3, 45), rect(mx(20, 80), y + 42, 80, 3)],
+    'sand': [sand(color, mx(23, sandW), y + 18, sandW, 24)],
+    'jars': [jar(color, mx(120, 70), y + 70, 70, 32, fill: fill, purity: purity)],
+  };
+}
+
+/// Compact hopper + valve + jar below (about 126 rows tall from [y]).
+/// Valve index = position in the level's valve list.
+J drop(int x, int y, String color, {double fill = 0.4, double purity = 0.8, int sandH = 30}) => {
+      'walls': hopper(x, y, 40, 40),
+      'valves': [valveAt(x + 10, y + 40, 20)],
+      'sand': [sand(color, x, y + 40 - sandH, 40, sandH)],
+      'jars': [jar(color, x - 5, y + 75, 50, 35, fill: fill, purity: purity)],
+    };
+
 /// Solution step helpers ([tick, kind, value]).
 List<int> tilt(int t, double deg) => [t, 0, (deg * 2).round()];
 List<int> valve(int t, int i) => [t, 1, i];
@@ -81,14 +111,14 @@ final levels = <Lv>[
     'walls': [...shelf(60, 180, 140), rect(119, 105, 3, 38)],
     'sand': [sand('blue', 82, 118, 37, 22), sand('blue', 122, 118, 37, 22)],
     'jars': [jar('blue', 4, 165, 58, 45, fill: 0.2), jar('blue', 178, 165, 58, 45, fill: 0.2)],
-  }, [tilt(30, -42), tilt(150, 0), tilt(200, 42), tilt(330, 0)]),
+  }, [tilt(30, -42), tilt(90, 0), tilt(120, 42), tilt(180, 0)]),
 
   // 4 — two colors (from Phase 3)
   Lv('Two Colors', 'Purity: each jar wants its own color', hint: 'Each jar wants its own color', {
     'walls': [rect(20, 40, 3, 73), rect(20, 110, 110, 3), rect(217, 230, 3, 73), rect(110, 300, 110, 3)],
     'sand': [sand('blue', 23, 72, 58, 38), sand('yellow', 160, 262, 57, 38)],
     'jars': [jar('blue', 155, 145, 80, 50), jar('yellow', 5, 335, 80, 50)],
-  }, [tilt(30, 38), tilt(90, -44), tilt(150, 0)]),
+  }, [tilt(30, 42), tilt(90, -44), tilt(150, 0)]),
 
   // 5 — funnel: a wide mouth catches the pour, the neck aims it
   Lv('Funnel', 'A funnel turns a wide pour into a precise stream', hint: 'Pour into the funnel, then level out', {
@@ -120,6 +150,7 @@ final levels = <Lv>[
     'valves': [valveAt(110, 228, 20), valveAt(110, 108, 20)],
     'sand': [sand('blue', 80, 190, 80, 38), sand('yellow', 93, 70, 54, 38)],
     'jars': [jar('blue', 95, 268, 50, 40, fill: 0.5), jar('yellow', 165, 320, 70, 45, fill: 0.25)],
+    'stars': {'purity': 0.9},
   }, [valve(30, 0), valve(170, 1), tilt(175, 30), tilt(400, 0)]),
 
   // 9 — pleasure: zigzag ramps carry the sand down on their own
@@ -156,9 +187,9 @@ final levels = <Lv>[
       {'color': 'blue', 'rect': [60, 200, 90, 2]},
     ],
     'sand': [sand('blue', 73, 55, 27, 64), sand('yellow', 100, 55, 27, 64)],
-    'jars': [jar('blue', 60, 260, 88, 50, fill: 0.3), jar('yellow', 166, 235, 68, 55, fill: 0.35, purity: 0.7)],
+    'jars': [jar('blue', 60, 260, 88, 50, fill: 0.3), jar('yellow', 166, 235, 68, 55, fill: 0.28, purity: 0.7)],
     'stars': {'purity': 0.9, 'spill': 0.25},
-  }, [valve(40, 0), tilt(250, 38), tilt(400, 0)]),
+  }, [valve(40, 0), tilt(250, 39), tilt(400, 0)]),
   // 12 — filter fed through a shared ramp
   Lv('Shared Chute', 'Both colors use one channel; the filter sorts at the end', {
     'walls': [
@@ -189,7 +220,7 @@ final levels = <Lv>[
       jar('yellow', 35, 230, 80, 40),
       jar('red', 125, 360, 80, 40),
     ],
-  }, [tilt(30, 40), tilt(150, 0), tilt(180, -40), tilt(300, 0)]),
+  }, [tilt(30, 40), tilt(90, 0), tilt(120, -40), tilt(180, 0)]),
 
   // 14 — tight budget: steer a valve's stream into the jar with ~10% to spare
   Lv('Tight Budget', 'Spill matters: barely more sand than the jar needs', hint: 'Not much to spare', {
@@ -208,7 +239,7 @@ final levels = <Lv>[
 
   // 16 — mixer: open both valves so blue and yellow meet in the mixer
   Lv('Mixer', 'No green sand anywhere, but a green jar', hint: 'Mix two colors to make a third', {
-    'walls': [...hopper(60, 30, 50, 70), ...hopper(130, 30, 50, 70), ...funnel(55, 185, 120, 120, 10, 170)],
+    'walls': [...hopper(60, 30, 50, 70), ...hopper(130, 30, 50, 70), ...funnel(55, 185, 120, 120, 4, 170)],
     'valves': [valveAt(75, 100, 20), valveAt(145, 100, 20)],
     'mixers': [
       {'rect': [95, 175, 50, 60]},
@@ -261,33 +292,208 @@ final levels = <Lv>[
   // 20 — boss: Desert Sunset. Four color hoppers over pairs of painting slots;
   // there's more sand than the slots need, so close each valve once its pair is
   // done or the overflow spoils the neighbours.
-  Lv('Desert Sunset', 'Boss: hoppers in reverse order; aim each color at its slots and close in time',
-      hint: 'One color at a time: aim, fill, close', {
-    'walls': [
-      ...hopper(65, 20, 24, 60), ...hopper(93, 20, 24, 60),
-      ...hopper(121, 20, 24, 60), ...hopper(149, 20, 24, 60),
-      // Bay dividers: a finished pair's overflow can't spill into the next pair.
-      rect(90, 278, 2, 22), rect(118, 278, 2, 22), rect(146, 278, 2, 22),
-    ],
-    'valves': [valveAt(75, 80, 4), valveAt(103, 80, 4), valveAt(131, 80, 4), valveAt(159, 80, 4)],
-    'sand': [
-      sand('yellow', 65, 40, 24, 40), sand('orange', 93, 40, 24, 40),
-      sand('red', 121, 40, 24, 40), sand('purple', 149, 40, 24, 40),
-    ],
-    'frames': [
-      {
-        'x': 64, 'y': 300, 'slot': [12, 30], 'fill': 0.5, 'purity': 0.8,
-        'colors': ['purple', 'purple', 'red', 'red', 'orange', 'orange', 'yellow', 'yellow'],
-      },
-    ],
-  }, [
-    tilt(25, -21), valve(30, 3), valve(92, 3),
-    tilt(190, -7.3), valve(195, 2), valve(257, 2),
-    tilt(355, 7.3), valve(360, 1), valve(422, 1),
-    tilt(520, 19.5), valve(525, 0), valve(587, 0), tilt(700, 0),
+  Lv('Desert Sunset', 'Boss: paint the sunset with valves, then pour both shelves. Tilting early throws the streams onto the wrong colors',
+      hint: 'Paint first, then pour', merge([
+    {
+      'walls': [
+        ...hopper(60, 10, 24, 60), ...hopper(92, 10, 24, 60),
+        ...hopper(124, 10, 24, 60), ...hopper(156, 10, 24, 60),
+        // A small splitter over each pair so one stream fills both slots.
+        for (final cx in [72, 104, 136, 168]) ...wedge(cx, 141, 9, 7),
+      ],
+      'valves': [valveAt(70, 70, 5), valveAt(102, 70, 5), valveAt(134, 70, 5), valveAt(166, 70, 5)],
+      'sand': [
+        sand('purple', 60, 48, 24, 22), sand('red', 92, 48, 24, 22),
+        sand('orange', 124, 48, 24, 22), sand('yellow', 156, 48, 24, 22),
+      ],
+      'frames': [
+        {
+          'x': 57, 'y': 150, 'slot': [14, 30], 'fill': 0.45, 'purity': 0.8,
+          'colors': ['purple', 'purple', 'red', 'red', 'orange', 'orange', 'yellow', 'yellow'],
+        },
+      ],
+    },
+    tier(195, 'blue'),
+    tier(300, 'green', right: false),
+  ]), [
+    valve(30, 0), valve(30, 1), valve(30, 2), valve(30, 3),
+    tilt(250, 44), tilt(310, 0), tilt(340, -44), tilt(400, 0),
   ]),
-
 ];
+
+// ---------------------------------------------------------------- remixes
+
+/// Mirrors geometry left↔right (tilts in the solution flip too).
+Object? _mirror(Object? v, String key) {
+  if (v is List) return [for (final e in v) _mirror(e, key)];
+  if (v is! Map) return v;
+  final m = Map<String, Object?>.from(v);
+  if (m['rect'] case final List r) m['rect'] = [levelW - (r[0] as int) - (r[2] as int), r[1], r[2], r[3]];
+  if (m['line'] case final List l) m['line'] = [levelW - (l[0] as int), l[1], levelW - (l[2] as int), l[3]];
+  if (m['circle'] case final List c) m['circle'] = [levelW - (c[0] as int), c[1], c[2]];
+  if (key == 'fans') m['dir'] = -((m['dir'] as int?) ?? 1);
+  if (key == 'frames') {
+    final colors = (m['colors'] as List).cast<String>();
+    final w = (m['slot'] as List)[0] as int;
+    m['x'] = levelW - ((m['x'] as int) + colors.length * w + (colors.length - 1) * jarWall);
+    m['colors'] = colors.reversed.toList();
+  }
+  return m;
+}
+
+/// Recolors everything that names a color.
+Object? _recolor(Object? v, Map<String, String> map) {
+  if (v is List) return [for (final e in v) _recolor(e, map)];
+  if (v is String) return map[v] ?? v;
+  if (v is! Map) return v;
+  return <String, Object?>{for (final e in v.entries) e.key as String: _recolor(e.value, map)};
+}
+
+/// A remix of an earlier level: new name, colors, mirror, and tighter numbers.
+Lv remix(
+  int n,
+  String name,
+  String concept, {
+  Map<String, String> colors = const {},
+  bool mirror = false,
+  double fillScale = 1,
+  double? purity,
+  String? hint,
+}) {
+  final base = levels[n - 1];
+  var data = <String, Object?>{for (final e in base.data.entries) e.key: e.value};
+  if (mirror) data = {for (final e in data.entries) e.key: _mirror(e.value, e.key)};
+  data = _recolor(data, colors) as Map<String, Object?>;
+  data['jars'] = [
+    for (final j in (data['jars'] as List?) ?? const [])
+      {
+        ...Map<String, Object?>.from(j as Map),
+        'fill': (((j['fill'] as num?) ?? 0.6) * fillScale).clamp(0.11, 0.85),
+        'purity': ?purity,
+      },
+  ];
+  final solution = [
+    for (final e in base.solution) e[1] == 0 && mirror ? [e[0], 0, -e[2]] : e,
+  ];
+  return Lv(name, concept, data, solution, hint: hint);
+}
+
+// ---------------------------------------------------------------- World 1, 21–60
+
+List<Lv> moreLevels() => [
+      // 21–29 ramp, 29 = breather, 30 = boss
+      Lv('Double Shelf', 'Two shelves pour the same way at once',
+          merge([tier(20, 'blue'), tier(220, 'yellow')]), [tilt(30, 44), tilt(90, 0)]),
+      Lv('Opposites', 'Tilt one way for two jars, the other way for the third',
+          merge([tier(10, 'blue'), tier(140, 'yellow', right: false), tier(270, 'red')]),
+          [tilt(30, 44), tilt(90, 0), tilt(120, -44), tilt(180, 0)]),
+      Lv('Valve Row', 'Three valves, then a pour',
+          merge([drop(25, 20, 'blue'), drop(100, 20, 'yellow'), drop(175, 20, 'red'), tier(200, 'green')]),
+          [valve(30, 0), valve(30, 1), valve(30, 2), tilt(250, 44), tilt(310, 0)]),
+      Lv('Wait For It', 'Let the valve finish before you tilt',
+          merge([drop(100, 20, 'orange'), tier(190, 'purple', right: false)]),
+          [valve(30, 0), tilt(220, -44), tilt(280, 0)]),
+      remix(11, 'Sieve', 'Filters again, new colors',
+          colors: {'blue': 'purple', 'yellow': 'green'}),
+      remix(15, 'Even Split', 'A splitter with a stricter purity', colors: {'blue': 'red'}, purity: 0.9),
+      remix(16, 'Sunrise Mix', 'Red and yellow make orange',
+          colors: {'blue': 'red', 'green': 'orange'}),
+      remix(18, 'Headwind', 'The fan blows the other way', colors: {'orange': 'purple'}, mirror: true),
+      remix(19, 'Cascade', 'A breather: the machine runs itself', colors: {'green': 'orange'}, mirror: true,
+          hint: 'Open the valve and enjoy'),
+      remix(20, 'Twilight', 'Boss: paint the evening sky',
+          colors: {'purple': 'blue', 'red': 'purple', 'orange': 'red', 'yellow': 'orange'}),
+
+      // 31–39
+      Lv('Three Ways', 'Alternate tilts, stricter purity',
+          merge([
+            tier(10, 'blue', purity: 0.9),
+            tier(140, 'yellow', right: false, purity: 0.9),
+            tier(270, 'green', purity: 0.9),
+          ]),
+          [tilt(30, 44), tilt(90, 0), tilt(120, -44), tilt(180, 0)]),
+      Lv('Drop and Pour', 'Valves first, then the shelf',
+          merge([drop(30, 20, 'red'), drop(170, 20, 'blue'), tier(190, 'green', right: false)]),
+          [valve(30, 0), valve(30, 1), tilt(230, -44), tilt(290, 0)]),
+      remix(14, 'Narrow Margin', 'Tight budget from the other side', mirror: true, colors: {'red': 'yellow'}),
+      remix(12, 'Red Chute', 'One chute, two colors, a red filter',
+          colors: {'blue': 'red', 'yellow': 'orange'}),
+      remix(16, 'Royal Mix', 'Red and blue make purple',
+          colors: {'yellow': 'red', 'green': 'purple'}, purity: 0.85),
+      remix(6, 'Lip Service', 'Order: the gentle pour first', colors: {'blue': 'red', 'yellow': 'green'}),
+      remix(10, 'Hourglass II', 'The hourglass, in fire colors',
+          colors: {'yellow': 'orange', 'blue': 'red'}),
+      Lv('Valve Trio', 'Three valves, two shelves',
+          merge([
+            drop(25, 10, 'purple'),
+            drop(100, 10, 'green'),
+            drop(175, 10, 'orange'),
+            tier(150, 'red'),
+            tier(280, 'blue', right: false),
+          ]),
+          [valve(30, 0), valve(30, 1), valve(30, 2), tilt(230, 44), tilt(290, 0), tilt(320, -44), tilt(380, 0)]),
+      remix(9, 'Zigzag II', 'A breather', colors: {'orange': 'green'}, mirror: true,
+          hint: 'Open the valve and enjoy'),
+      remix(20, 'Ember', 'Boss: a sky on fire',
+          colors: {'purple': 'red', 'red': 'orange', 'orange': 'yellow', 'yellow': 'white'}),
+
+      // 41–49
+      remix(8, 'Stacked', 'Two valves in a stack, new colors', colors: {'blue': 'purple', 'yellow': 'orange'}),
+      Lv('Crossing', 'Shelves both ways around a valve',
+          merge([tier(10, 'red'), drop(100, 140, 'yellow'), tier(280, 'blue', right: false)]),
+          [tilt(30, 44), tilt(90, 0), valve(110, 0), tilt(270, -44), tilt(330, 0)]),
+      Lv('Tight Tiers', 'Three shelves, little to spare',
+          merge([
+            tier(10, 'blue', fill: 0.36),
+            tier(140, 'blue', right: false, fill: 0.36),
+            tier(270, 'blue', fill: 0.36),
+          ]),
+          [tilt(30, 44), tilt(90, 0), tilt(120, -44), tilt(180, 0)]),
+      remix(12, 'Chute Again', 'Shared chute, stricter jars', mirror: true, fillScale: 1.05),
+      remix(17, 'Sunset Mix', 'Mixer then filter: orange and red from one source',
+          colors: {'blue': 'red', 'yellow': 'yellow', 'green': 'orange'}),
+      remix(15, 'Fair Shares', 'Split evenly, fill higher', colors: {'blue': 'green'}, fillScale: 1.2),
+      remix(14, 'Precise', 'Even tighter budget', colors: {'red': 'blue'}, fillScale: 1.02),
+      Lv('Busy Valves', 'Six valves, six colors',
+          merge([
+            drop(25, 10, 'blue'), drop(100, 10, 'yellow'), drop(175, 10, 'red'),
+            drop(25, 150, 'green'), drop(100, 150, 'purple'), drop(175, 150, 'orange'),
+          ]),
+          [for (var i = 0; i < 6; i++) valve(30, i)]),
+      remix(19, 'Machine II', 'A breather', colors: {'green': 'purple'}, hint: 'Open the valve and enjoy'),
+      remix(20, 'Rainbow', 'Boss: four colors, four aims',
+          colors: {'purple': 'blue', 'red': 'green', 'orange': 'yellow', 'yellow': 'red'}),
+
+      // 51–59, 60 boss
+      Lv('Five Jars', 'Valves, then both directions',
+          merge([
+            drop(25, 10, 'blue'),
+            drop(100, 10, 'yellow'),
+            drop(175, 10, 'red'),
+            tier(150, 'green'),
+            tier(280, 'purple', right: false),
+          ]),
+          [valve(30, 0), valve(30, 1), valve(30, 2), tilt(230, 44), tilt(290, 0), tilt(320, -44), tilt(380, 0)]),
+      remix(6, 'Order II', 'Mirrored order puzzle', mirror: true, colors: {'blue': 'purple', 'yellow': 'orange'}),
+      remix(10, 'Hourglass III', 'Hourglass with a pure middle', colors: {'yellow': 'green', 'blue': 'purple'},
+          purity: 0.8),
+      remix(11, 'Strict Filter', 'Filter, stricter purity', colors: {'blue': 'red', 'yellow': 'blue'},
+          purity: 0.8),
+      remix(18, 'Gale', 'Fan, new colors', colors: {'orange': 'green'}, fillScale: 1.15),
+      Lv('Triple Tight', 'Alternate tilts, strict purity, little spare',
+          merge([
+            tier(10, 'red', fill: 0.36, purity: 0.9),
+            tier(140, 'orange', right: false, fill: 0.36, purity: 0.9),
+            tier(270, 'yellow', fill: 0.36, purity: 0.9),
+          ]),
+          [tilt(30, 44), tilt(90, 0), tilt(120, -44), tilt(180, 0)]),
+      remix(15, 'Twin Split', 'Strict split', colors: {'blue': 'purple'}, purity: 0.9, fillScale: 1.2),
+      remix(16, 'Deep Green', 'Mixer, higher fill', fillScale: 1.3),
+      remix(9, 'Grand Zigzag', 'A breather before the last boss', colors: {'orange': 'blue'},
+          hint: 'Open the valve and enjoy'),
+      remix(20, 'Desert Night', 'Final boss: night falls over the desert',
+          colors: {'purple': 'blue', 'red': 'purple', 'orange': 'white', 'yellow': 'yellow'}),
+    ];
 
 // ---------------------------------------------------------------- build
 
@@ -295,7 +501,8 @@ void main(List<String> args) {
   final only = args.map(int.parse).toSet();
   final index = <String>[];
   var failed = 0;
-  for (final (i, lv) in levels.indexed) {
+  final all = [...levels, ...moreLevels()];
+  for (final (i, lv) in all.indexed) {
     final n = (i + 1).toString().padLeft(3, '0');
     final path = 'w1/$n';
     index.add(path);

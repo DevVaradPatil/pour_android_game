@@ -1,0 +1,120 @@
+{
+  "id": "w1_022",
+  "name": "Opposites",
+  "seed": 22,
+  "concept": "Tilt one way for two jars, the other way for the third",
+  "walls": [
+    {
+      "rect": [
+        20,
+        10,
+        3,
+        45
+      ]
+    },
+    {
+      "rect": [
+        20,
+        52,
+        80,
+        3
+      ]
+    },
+    {
+      "rect": [
+        217,
+        140,
+        3,
+        45
+      ]
+    },
+    {
+      "rect": [
+        140,
+        182,
+        80,
+        3
+      ]
+    },
+    {
+      "rect": [
+        20,
+        270,
+        3,
+        45
+      ]
+    },
+    {
+      "rect": [
+        20,
+        312,
+        80,
+        3
+      ]
+    }
+  ],
+  "sand": [
+    {
+      "color": "blue",
+      "rect": [
+        23,
+        28,
+        40,
+        24
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        177,
+        158,
+        40,
+        24
+      ]
+    },
+    {
+      "color": "red",
+      "rect": [
+        23,
+        288,
+        40,
+        24
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "blue",
+      "rect": [
+        120,
+        80,
+        70,
+        32
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        50,
+        210,
+        70,
+        32
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    },
+    {
+      "color": "red",
+      "rect": [
+        120,
+        340,
+        70,
+        32
+      ],
+      "fill": 0.3,
+      "purity": 0.8
+    }
+  ]
+}
