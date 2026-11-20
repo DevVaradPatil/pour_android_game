@@ -48,7 +48,9 @@ class Progress extends ChangeNotifier {
     return chestCoins;
   }
 
-  bool dailyDone(int day) => data.daily.last == day;
+  /// Days up to the last completed one count as done, so moving the clock
+  /// back can't replay old jars for coins or streak.
+  bool dailyDone(int day) => data.daily.last >= day;
 
   /// A Daily Jar was won. Keeps the day's best score; the first win of the day
   /// pays [dailyCoins] and advances the daily streak (spending the weekly

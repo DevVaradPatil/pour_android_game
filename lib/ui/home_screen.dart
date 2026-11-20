@@ -95,7 +95,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text('DAILY JAR #$day', style: PourText.label.copyWith(color: PourColors.textMuted)),
                     Text(
-                      done && r != null ? '${'★' * ((r['stars'] as num).toInt())} ${r['score']} pts' : 'A new jar is ready',
+                      !done
+                          ? 'A new jar is ready'
+                          : (r != null && r['n'] == day ? '${'★' * ((r['stars'] as num).toInt())} ${r['score']} pts' : 'Done'),
                       style: PourText.heading.copyWith(fontSize: 17),
                     ),
                     if (streak > 0)

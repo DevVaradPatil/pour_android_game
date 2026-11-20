@@ -115,6 +115,14 @@ void main() {
       expect(p.dailyShare(4), isNull);
     });
 
+    test('moving the clock back cannot replay old jars for coins', () {
+      final p = Progress()..recordDaily(5, score: 900, stars: 3, purity: 1, ticks: 100, jars: const []);
+      expect(p.dailyDone(3), isTrue);
+      final back = p.recordDaily(3, score: 900, stars: 3, purity: 1, ticks: 100, jars: const []);
+      expect(back.coins, 0);
+      expect(p.data.daily.streak, 1);
+    });
+
     test('a v1 save migrates to v2 with no daily history', () {
       final dir = Directory.systemTemp.createTempSync('pour_v1_');
       addTearDown(() => dir.deleteSync(recursive: true));

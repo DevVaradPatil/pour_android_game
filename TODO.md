@@ -16,6 +16,8 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
 - [ ] **AI image generation for album art / store graphics.** It spends your creative-tool credits. Approve per batch. (Phases 5, 11)
 - [ ] Open GDD questions §18: landscape for tablets? free 360° tilt in painting levels? lives A/B? premium edition?
 
+- [ ] **Store link in the Daily Jar share text** uses the current application ID (`lib/meta/daily.dart` `storeUrl`). Update it together with the final ID. (Before Phase 11)
+
 ## Emulator / devices
 
 - [ ] **Emulator storage.** `Medium_Phone_API_36.1` has ~470 MB free, so the 139 MB debug APK fails to install (`INSTALL_FAILED_INSUFFICIENT_STORAGE`). Profile builds work, but there's no hot reload. Pick one fix:
@@ -52,3 +54,7 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
 
 - [ ] A Mac with Xcode, plus an **Apple Developer Program** membership ($99/yr). The iOS build and test can't be done from this Windows PC. (Phase 12)
 - [ ] App Store Connect app record, AdMob iOS app ID, StoreKit products. (Phase 12)
+
+## Toolchain (Claude can do it, but it's a deliberate step)
+
+- [ ] **Upgrade the Android toolchain to API 37** (newer Android Gradle plugin, SDK platform 37), then lift the `flutter_local_notifications` pin from 22.x. Google Play's target-API deadline will force this eventually. Tell Claude when you want it done; it needs a full on-device retest. (Before Phase 11)
