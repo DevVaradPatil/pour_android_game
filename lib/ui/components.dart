@@ -2,14 +2,18 @@
 // Material widgets styled by theme.dart, so they don't get wrappers here.
 import 'package:flutter/material.dart';
 
+import '../services/audio.dart';
 import 'tokens.dart';
 
 /// Shrinks slightly while pressed: the toy-like "squish" every tappable thing shares.
 class Squish extends StatefulWidget {
-  const Squish({super.key, required this.child, this.onTap, this.scale = 0.94});
+  const Squish({super.key, required this.child, this.onTap, this.scale = 0.94, this.sound = true});
   final Widget child;
   final VoidCallback? onTap;
   final double scale;
+
+  /// Plays the UI tap; off for controls with their own sound (valves, fans).
+  final bool sound;
 
   @override
   State<Squish> createState() => _SquishState();
@@ -24,18 +28,23 @@ class _SquishState extends State<Squish> {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => _set(true),
-        onTapUp: (_) => _set(false),
-        onTapCancel: () => _set(false),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _down ? widget.scale : 1,
-          duration: Motion.fast,
-          curve: Motion.standard,
-          child: widget.child,
-        ),
-      );
+    behavior: HitTestBehavior.opaque,
+    onTapDown: (_) => _set(true),
+    onTapUp: (_) => _set(false),
+    onTapCancel: () => _set(false),
+    onTap: widget.onTap == null
+        ? null
+        : () {
+            if (widget.sound) audio.sfx(Sfx.tap, volume: 0.6);
+            widget.onTap!();
+          },
+    child: AnimatedScale(
+      scale: _down ? widget.scale : 1,
+      duration: Motion.fast,
+      curve: Motion.standard,
+      child: widget.child,
+    ),
+  );
 }
 
 enum PourButtonStyle { primary, secondary }
@@ -96,7 +105,13 @@ class PourButton extends StatelessWidget {
 }
 
 class RoundIconButton extends StatelessWidget {
-  const RoundIconButton({super.key, required this.icon, required this.tooltip, required this.onPressed, this.size = 48});
+  const RoundIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.size = 48,
+  });
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
@@ -104,22 +119,22 @@ class RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: tooltip,
-        child: Semantics(
-          button: true,
-          label: tooltip,
-          excludeSemantics: true,
-          child: Squish(
-            onTap: onPressed,
-            child: Container(
-              width: size,
-              height: size,
-              decoration: const BoxDecoration(color: PourColors.surfaceHigh, shape: BoxShape.circle),
-              child: Icon(icon, size: size * 0.5, color: PourColors.text),
-            ),
-          ),
+    message: tooltip,
+    child: Semantics(
+      button: true,
+      label: tooltip,
+      excludeSemantics: true,
+      child: Squish(
+        onTap: onPressed,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: const BoxDecoration(color: PourColors.surfaceHigh, shape: BoxShape.circle),
+          child: Icon(icon, size: size * 0.5, color: PourColors.text),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 /// Pill showing a currency or count, e.g. coins or stars.
@@ -132,21 +147,21 @@ class CounterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: '${label ?? ''} $value'.trim(),
-        excludeSemantics: true,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(Space.s, Space.xs, Space.m, Space.xs),
-          decoration: BoxDecoration(color: PourColors.surface, borderRadius: BorderRadius.circular(Radii.xl)),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: iconColor, size: 22),
-              const SizedBox(width: Space.xs),
-              Text('$value', style: PourText.number),
-            ],
-          ),
-        ),
-      );
+    label: '${label ?? ''} $value'.trim(),
+    excludeSemantics: true,
+    child: Container(
+      padding: const EdgeInsets.fromLTRB(Space.s, Space.xs, Space.m, Space.xs),
+      decoration: BoxDecoration(color: PourColors.surface, borderRadius: BorderRadius.circular(Radii.xl)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: iconColor, size: 22),
+          const SizedBox(width: Space.xs),
+          Text('$value', style: PourText.number),
+        ],
+      ),
+    ),
+  );
 }
 
 class StarRow extends StatelessWidget {
@@ -156,20 +171,20 @@ class StarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: '$stars of 3 stars',
-        excludeSemantics: true,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < 3; i++)
-              Icon(
-                i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
-                size: size,
-                color: i < stars ? PourColors.accent : PourColors.outline,
-              ),
-          ],
-        ),
-      );
+    label: '$stars of 3 stars',
+    excludeSemantics: true,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < 3; i++)
+          Icon(
+            i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
+            size: size,
+            color: i < stars ? PourColors.accent : PourColors.outline,
+          ),
+      ],
+    ),
+  );
 }
 
 /// Horizontal fill meter (jar fill, spill, purity). Animates to [value] in 0..1.
@@ -182,23 +197,25 @@ class SandMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: label,
-        value: '${(value * 100).round()}%',
-        child: Container(
-          height: height,
-          decoration: BoxDecoration(color: PourColors.surfaceHigh, borderRadius: BorderRadius.circular(height)),
-          alignment: Alignment.centerLeft,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(end: value.clamp(0, 1)),
-            duration: Motion.medium,
-            curve: Motion.standard,
-            builder: (_, v, _) => FractionallySizedBox(
-              widthFactor: v,
-              child: Container(decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(height))),
-            ),
+    label: label,
+    value: '${(value * 100).round()}%',
+    child: Container(
+      height: height,
+      decoration: BoxDecoration(color: PourColors.surfaceHigh, borderRadius: BorderRadius.circular(height)),
+      alignment: Alignment.centerLeft,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: value.clamp(0, 1)),
+        duration: Motion.medium,
+        curve: Motion.standard,
+        builder: (_, v, _) => FractionallySizedBox(
+          widthFactor: v,
+          child: Container(
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(height)),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 enum LevelState { locked, open, current }
@@ -236,11 +253,16 @@ class LevelNode extends StatelessWidget {
               ),
               child: locked
                   ? const Icon(Icons.lock_rounded, color: PourColors.outline)
-                  : Text('$number',
-                      style: PourText.title.copyWith(color: current ? PourColors.onAccent : PourColors.text)),
+                  : Text(
+                      '$number',
+                      style: PourText.title.copyWith(color: current ? PourColors.onAccent : PourColors.text),
+                    ),
             ),
             const SizedBox(height: Space.xs),
-            Opacity(opacity: locked ? 0 : 1, child: StarRow(stars: stars, size: 16)),
+            Opacity(
+              opacity: locked ? 0 : 1,
+              child: StarRow(stars: stars, size: 16),
+            ),
           ],
         ),
       ),
@@ -256,12 +278,12 @@ class PourCard extends StatelessWidget {
   @override
   // A Material (not a decorated Container) so ListTiles/ink inside still show splashes.
   Widget build(BuildContext context) => Material(
-        color: PourColors.surface,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Radii.l),
-          side: BorderSide(color: PourColors.outline.withValues(alpha: 0.5)),
-        ),
-        child: Padding(padding: padding, child: child),
-      );
+    color: PourColors.surface,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(Radii.l),
+      side: BorderSide(color: PourColors.outline.withValues(alpha: 0.5)),
+    ),
+    child: Padding(padding: padding, child: child),
+  );
 }

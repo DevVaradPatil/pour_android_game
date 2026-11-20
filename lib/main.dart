@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'game/play_kit.dart';
 import 'meta/progress.dart';
 import 'meta/save_store.dart';
+import 'services/audio.dart';
 import 'services/notifications.dart';
 
 import 'ui/home_screen.dart';
@@ -15,6 +16,7 @@ Future<void> main() async {
   progress = Progress(SaveStore(await getApplicationSupportDirectory()));
   applyTiltSettings();
   runApp(const PourApp());
+  audio.init(PluginAudio());
   await notifications.init();
   await refreshReminder();
 }

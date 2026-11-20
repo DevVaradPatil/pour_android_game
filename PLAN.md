@@ -218,15 +218,20 @@ Bugs found and fixed along the way: closing a valve mid-flow left holes (the hop
 
 **Known limits:** `flutter_local_notifications` pinned to 22.x (23.x needs compileSdk 37; see TODO.md toolchain item). The "streak ends in 2h" variant was dropped to keep one notification a day.
 
-### Phase 7 — Juice: audio, haptics, camera `[ ]`
-- [ ] Sound list (see §4 Assets): granular sand hiss (volume/pitch follow active grain count & jar fill), cork thunk+pop, valve, filter, UI taps, star chime, album reveal, ambient music loop
-- [ ] Haptics: continuous light buzz scaled to flow (amplitude control where supported), sharp click on cork
-- [ ] Camera counter-rotation ≈10% of tilt; glass glare moving with tilt; per-grain color jitter; settled-sand shadow
-- [ ] Completion sequence: corks pop in sequence, jar hop, tile flies to album
-- [ ] Respect system silent mode / volume and in-app toggles
+### Phase 7 — Juice: audio, haptics, camera `[x]`
+- [x] Sounds synthesized in code (`tool/audio/synth.dart` → `assets/audio/*.wav`, 1.4 MB): granular sand hiss loop (volume follows grains moving, pitch rises as the jar fills), cork thunk+pop, valve, fan whoosh, UI tap, three star chimes, win jingle, out-of-sand, album reveal, 24 s ambient music loop. WAV because iOS can't play OGG and AAC loops have gaps
+- [x] `lib/services/audio.dart`: game-level API (`sfx`, `flow`, `syncMusic`) over a swappable backend (`audioplayers`; fake in tests). Loops pause when the app is hidden
+- [x] Haptics: light ticks whose rate follows the flow (up to ~15/s), heavy click on each cork
+- [x] Board leans ~10% against the phone's tilt (with it for touch tilt; off with the system's reduce-motion), glass glare slides with tilt, per-grain shade jitter (since Phase 1), grains under sand drawn darker than the top layer
+- [x] Win sequence: corks pop down the line with a hop and a ring each, then the card: jingle, stars light one by one with chimes, and on a first win the album tile flies into the album icon
+- [x] Mixes with other apps' audio (no audio focus); Android plays on the media stream (volume buttons), iOS uses the ambient category (silent switch mutes it); sound / music / vibration toggles apply at once
 
 **Tests:** audio service unit test with a fake backend (events → calls); frame budget re-checked (`bench_sim` + profile mode) — juice must not drop fps.
 **Gate:** emulator recording (`adb shell screenrecord`) of a full level reviewed; owner listens on a real phone speaker.
+
+**Results (2026-11-20):** 170 tests (audio service vs a fake backend: music toggle, sound-off, flow → volume/pitch with release to silence and no chatter while quiet, level-to-level handover, background pause; sand shading). Bench: render 0.09 → 0.16 ms/frame, tick 3.8 ms of 16.7. Emulator: 30 s recording of autoplayed levels 1–7 reviewed frame by frame (lean, cork rings, stars lighting, tile fly, all levels won as in the report); `dumpsys audio` shows the players as `USAGE_GAME` with no focus request (fixed: the music player first came up as plain media because audioplayers copies its global context at creation). The final glare tweak (fainter, narrower) wasn't re-checked on the emulator: its storage filled up (TODO.md).
+
+**Known limits:** waveforms checked by spectrogram only — nobody has listened yet (owner, real phone). The jar "hop" moves the jar's glyph, not the jar pixels. No filter sound and no vibration amplitude control (would need the `vibration` package + VIBRATE permission). Music is a generated placeholder (TODO.md).
 
 ### Phase 8 — Monetization `[ ]`
 - [ ] AdMob: rewarded (+Sand on fail, Undo, double coins, chest boost); interstitial (after win, level ≥ 15, ≥ 3 min apart, never after fail)
