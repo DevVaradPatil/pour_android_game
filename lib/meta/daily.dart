@@ -105,8 +105,7 @@ String shareText({
   final secs = (ticks / 60).round();
   final time = '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}';
   final rows = [
-    for (final (c, p) in jars)
-      List.generate(5, (i) => i < (p * 5).round().clamp(1, 5) ? _squares[c]! : '⬛').join(),
+    for (final (c, p) in jars) List.generate(5, (i) => i < (p * 5).round().clamp(1, 5) ? _squares[c]! : '⬛').join(),
   ];
   return [
     'Pour · Daily Jar #$number',

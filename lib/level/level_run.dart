@@ -1,6 +1,7 @@
 // One play of a level: the rules on top of the sim (jars, corks, valves, win/lose,
 // stars) plus input recording. Pure Dart; same code runs in the app and headless.
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import '../game/palette.dart';
@@ -20,8 +21,9 @@ class JarState {
 }
 
 /// Recorded input: `[tick, kind, value]`. kind 0 = gravity (half-degrees),
-/// 1 = valve toggle (index), 2 = slow-mo (0/1), 3 = fan toggle (index).
-/// Applied before that tick's step.
+/// 1 = valve toggle (index), 2 = slow-mo (0/1), 3 = fan toggle (index),
+/// 4 = +Sand booster (color index). Applied before that tick's step.
+/// An Undo isn't recorded: it cuts the events back to the rewind point.
 class Replay {
   Replay(this.levelId, this.events, this.ticks, {this.stars = 0});
 
@@ -40,8 +42,8 @@ class Replay {
   final int ticks; // tick at which the recorded run ended
   final int stars; // stars the recorded run earned
 
-  String toJson() => const JsonEncoder.withIndent(null)
-      .convert({'level': levelId, 'ticks': ticks, 'stars': stars, 'events': events});
+  String toJson() =>
+      const JsonEncoder.withIndent(null).convert({'level': levelId, 'ticks': ticks, 'stars': stars, 'events': events});
 }
 
 class LevelRun {
@@ -76,6 +78,7 @@ class LevelRun {
   bool get slowMo => _slow;
   double get gravityDeg => _gravityHalf / 2;
   int get lostGrains => sim.lost.fold(0, (a, b) => a + b);
+
   /// Live until the level is won, then frozen: sand keeps settling (and maybe
   /// spilling) after the win, but the result must not change under the player.
   double get spill => _wonSpill ?? (initialGrains == 0 ? 0 : lostGrains / initialGrains);
@@ -124,6 +127,109 @@ class LevelRun {
     events.add([tick, 3, i]);
   }
 
+  /// Applies one recorded event (see [Replay]).
+  void apply(List<int> e) {
+    final [_, kind, value] = e;
+    switch (kind) {
+      case 0:
+        setGravityDegrees(value / 2);
+      case 1:
+        toggleValve(value);
+      case 2:
+        setSlowMo(value == 1);
+      case 3:
+        toggleFan(value);
+      case 4:
+        addSand(SandColor.values[value]);
+    }
+  }
+
+  // ---- Boosters ----
+
+  static const int snapshotEvery = 60, undoTicks = 180;
+  final List<_Snapshot> _snapshots = [];
+
+  /// Undo is possible once there is something to rewind (not after a win).
+  bool get canUndo => status != RunStatus.won && tick > 0;
+
+  /// Rewinds ~3 s: to the newest snapshot at least [undoTicks] old (or the
+  /// start). Recorded events after it are dropped, so the replay stays exact.
+  void undo() {
+    if (!canUndo || _snapshots.isEmpty) return;
+    while (_snapshots.length > 1 && _snapshots.last.tick > tick - undoTicks) {
+      _snapshots.removeLast();
+    }
+    final s = _snapshots.last;
+    sim.restore(s.sim);
+    tick = s.tick;
+    status = RunStatus.playing;
+    shortColors.clear();
+    _gravityHalf = s.gravityHalf;
+    _slow = s.slow;
+    valveOpen.setAll(0, s.valves);
+    fanOn.setAll(0, s.fans);
+    _corkedGrains.setAll(0, s.corkedGrains);
+    for (final (i, j) in jars.indexed) {
+      final (corked, total, match) = s.jars[i];
+      j
+        ..corked = corked
+        ..total = total
+        ..match = match;
+    }
+    events.length = s.events;
+  }
+
+  void _takeSnapshot() {
+    if (_snapshots.isNotEmpty && _snapshots.last.tick == tick) _snapshots.removeLast();
+    _snapshots.add(
+      _Snapshot(
+        tick: tick,
+        sim: sim.snapshot(),
+        gravityHalf: _gravityHalf,
+        slow: _slow,
+        valves: List.of(valveOpen),
+        fans: List.of(fanOn),
+        corkedGrains: Int32List.fromList(_corkedGrains),
+        jars: [for (final j in jars) (j.corked, j.total, j.match)],
+        events: events.length,
+      ),
+    );
+    // Enough to reach back undoTicks from anywhere between two snapshots.
+    if (_snapshots.length > undoTicks ~/ snapshotEvery + 2) _snapshots.removeAt(0);
+  }
+
+  /// +Sand: when out of sand, drops more of [c] where that color started
+  /// (or where its ingredients / any sand started), enough for its open jars
+  /// plus a margin. Deterministic, so it's recorded like any other input.
+  void addSand(SandColor c) {
+    if (status != RunStatus.outOfSand) return;
+    var want = 0;
+    for (final j in jars) {
+      if (!j.corked && j.def.color == c) want += math.max(0, j.def.target - j.match);
+    }
+    var add = math.max(30, (want * 1.3).ceil() + 30 - _available(c));
+    final ing = ingredientsOf(c);
+    final from = [
+      ...level.sand.where((s) => s.color == c),
+      if (ing != null) ...level.sand.where((s) => s.color == ing.$1 || s.color == ing.$2),
+      ...level.sand,
+    ];
+    for (final s in from) {
+      final b = s.shape.bounds;
+      for (var y = b.y + b.h - 1; y >= b.y && add > 0; y--) {
+        for (var x = b.x; x < b.x + b.w && add > 0; x++) {
+          if (x < 0 || y < 0 || x >= sim.width || y >= sim.height || sim.get(x, y) != Cell.empty) continue;
+          sim.set(x, y, c.cellType);
+          add--;
+        }
+      }
+      if (add == 0) break;
+    }
+    events.add([tick, 4, c.index]);
+    status = RunStatus.playing;
+    shortColors.clear();
+  }
+
   void setSlowMo(bool on) {
     if (status != RunStatus.playing || on == _slow) return;
     _slow = on;
@@ -132,6 +238,7 @@ class LevelRun {
 
   /// One 60 Hz tick. Keeps simulating after the end so sand settles visibly.
   void step() {
+    if (status == RunStatus.playing && tick % snapshotEvery == 0) _takeSnapshot();
     sim.setGravityDegrees(gravityDeg);
     moved = 0;
     for (var s = 0; s < (_slow ? slowSubsteps : substeps); s++) {
@@ -220,7 +327,12 @@ class LevelRun {
       freeAll += sim.count[c.cellType] - _corkedGrains[c.cellType];
       if (need > 0 && need > _available(c)) shortColors.add(c);
     }
-    if (needAll > freeAll) shortColors.addAll([for (final j in jars) if (!j.corked) j.def.color]);
+    if (needAll > freeAll) {
+      shortColors.addAll([
+        for (final j in jars)
+          if (!j.corked) j.def.color,
+      ]);
+    }
     if (shortColors.isNotEmpty) status = RunStatus.outOfSand;
   }
 
@@ -242,20 +354,12 @@ class LevelRun {
   static LevelRun play(Level level, Replay replay, {int extraTicks = 600, void Function(LevelRun)? onTick}) {
     final run = LevelRun(level);
     var e = 0;
-    while (run.status == RunStatus.playing && run.tick < replay.ticks + extraTicks) {
+    while (run.tick < replay.ticks + extraTicks) {
       while (e < replay.events.length && replay.events[e][0] <= run.tick) {
-        final [_, kind, value] = replay.events[e++];
-        switch (kind) {
-          case 0:
-            run.setGravityDegrees(value / 2);
-          case 1:
-            run.toggleValve(value);
-          case 2:
-            run.setSlowMo(value == 1);
-          case 3:
-            run.toggleFan(value);
-        }
+        run.apply(replay.events[e++]);
       }
+      // After a loss the app keeps settling sand; a later +Sand resumes play.
+      if (run.status != RunStatus.playing && e >= replay.events.length) break;
       run.step();
       onTick?.call(run);
     }
@@ -263,6 +367,27 @@ class LevelRun {
   }
 
   /// One-line summary for tools and logs.
-  String summary() => '${status.name} t=$tick stars=$stars purity=${(avgPurity * 100).toStringAsFixed(1)}% '
+  String summary() =>
+      '${status.name} t=$tick stars=$stars purity=${(avgPurity * 100).toStringAsFixed(1)}% '
       'spill=${(spill * 100).toStringAsFixed(1)}% jars=[${jars.map((j) => '${j.def.color.name}:${j.corked ? 'corked' : '${(j.fillProgress * 100).round()}%'}').join(' ')}]';
+}
+
+class _Snapshot {
+  _Snapshot({
+    required this.tick,
+    required this.sim,
+    required this.gravityHalf,
+    required this.slow,
+    required this.valves,
+    required this.fans,
+    required this.corkedGrains,
+    required this.jars,
+    required this.events,
+  });
+  final int tick, gravityHalf, events;
+  final SimSnapshot sim;
+  final bool slow;
+  final List<bool> valves, fans;
+  final Int32List corkedGrains;
+  final List<(bool, int, int)> jars;
 }

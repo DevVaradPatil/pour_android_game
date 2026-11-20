@@ -22,13 +22,13 @@ abstract final class Cell {
 
 class SandSim {
   SandSim(this.width, this.height, {this.seed = 1, this.reposeDeg = 35})
-      : cells = Uint8List(width * height),
-        shade = Uint8List(width * height),
-        lost = Int32List(Cell.typeCount),
-        count = Int32List(Cell.typeCount),
-        _stamp = Uint32List(width * height),
-        _cw = (width + _cs - 1) >> _cb,
-        _ch = (height + _cs - 1) >> _cb {
+    : cells = Uint8List(width * height),
+      shade = Uint8List(width * height),
+      lost = Int32List(Cell.typeCount),
+      count = Int32List(Cell.typeCount),
+      _stamp = Uint32List(width * height),
+      _cw = (width + _cs - 1) >> _cb,
+      _ch = (height + _cs - 1) >> _cb {
     _cur = Uint8List(_cw * _ch);
     _next = Uint8List(_cw * _ch);
     _reposeSin = math.sin(reposeDeg * math.pi / 180);
@@ -117,6 +117,31 @@ class SandSim {
   }
 
   void wakeAll() => _cur.fillRange(0, _cur.length, 1);
+
+  /// Everything a later [restore] needs to continue exactly as from here.
+  SimSnapshot snapshot() => SimSnapshot._(
+    Uint8List.fromList(cells),
+    Uint8List.fromList(shade),
+    Int32List.fromList(lost),
+    Int32List.fromList(count),
+    _tick,
+    _grains,
+    _gravityDeg,
+  );
+
+  /// Rewinds to [s]. Stamps are only ever compared with the current tick, so
+  /// clearing them is exact; waking every chunk matches the sleeping run
+  /// (sleeping is exact, see test/sim).
+  void restore(SimSnapshot s) {
+    cells.setAll(0, s._cells);
+    shade.setAll(0, s._shade);
+    lost.setAll(0, s._lost);
+    count.setAll(0, s._count);
+    _tick = s._tick;
+    _grains = s._grains;
+    _stamp.fillRange(0, _stamp.length, 0);
+    _applyGravity(s._gravityDeg); // also wakes everything
+  }
 
   int get(int x, int y) => cells[y * width + x];
 
@@ -280,8 +305,7 @@ class SandSim {
     return _free(x + _dx[_k1], y + _dy[_k1]) || _free(x + _dx[_k2], y + _dy[_k2]);
   }
 
-  bool _free(int x, int y) =>
-      x < 0 || y < 0 || x >= width || y >= height || cells[y * width + x] == Cell.empty;
+  bool _free(int x, int y) => x < 0 || y < 0 || x >= width || y >= height || cells[y * width + x] == Cell.empty;
 
   /// Wakes every chunk touching the 7x7 neighbourhood of (x, y), for this step and the next.
   void _wake(int x, int y) {
@@ -396,4 +420,13 @@ class SandSim {
     }
     return h;
   }
+}
+
+/// Opaque copy of a [SandSim]'s state (≈2 bytes per cell).
+class SimSnapshot {
+  SimSnapshot._(this._cells, this._shade, this._lost, this._count, this._tick, this._grains, this._gravityDeg);
+  final Uint8List _cells, _shade;
+  final Int32List _lost, _count;
+  final int _tick, _grains;
+  final double _gravityDeg;
 }

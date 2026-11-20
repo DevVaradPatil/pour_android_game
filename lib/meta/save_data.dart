@@ -13,15 +13,15 @@ class Settings {
   bool reminders = false; // daily "your jar is ready" notification (opt-in)
 
   Map<String, Object?> toJson() => {
-        'sensitivity': sensitivity,
-        'deadZone': deadZone,
-        'invert': invert,
-        'touchOnly': touchOnly,
-        'sound': sound,
-        'music': music,
-        'haptics': haptics,
-        'reminders': reminders,
-      };
+    'sensitivity': sensitivity,
+    'deadZone': deadZone,
+    'invert': invert,
+    'touchOnly': touchOnly,
+    'sound': sound,
+    'music': music,
+    'haptics': haptics,
+    'reminders': reminders,
+  };
 
   static Settings fromJson(Map<String, Object?> m) => Settings()
     ..sensitivity = (m['sensitivity'] as num?)?.toDouble() ?? 1.0
@@ -44,12 +44,14 @@ class SaveData {
     Settings? settings,
     DailyStreak? daily,
     this.dailyResult,
-  })  : stars = stars ?? {},
-        seenTiles = seenTiles ?? {},
-        settings = settings ?? Settings(),
-        daily = daily ?? DailyStreak();
+    Set<String>? owned,
+  }) : stars = stars ?? {},
+       seenTiles = seenTiles ?? {},
+       settings = settings ?? Settings(),
+       daily = daily ?? DailyStreak(),
+       owned = owned ?? {};
 
-  static const int version = 2;
+  static const int version = 3;
 
   /// Best stars per level path ("w1/001").
   final Map<String, int> stars;
@@ -68,19 +70,23 @@ class SaveData {
   /// {n, score, stars, purity, ticks, jars: [[color, purity], ...]}.
   Map<String, Object?>? dailyResult;
 
+  /// Store products granted to this save ("remove_ads", "starter_pack").
+  final Set<String> owned;
+
   int get totalStars => stars.values.fold(0, (a, b) => a + b);
 
   Map<String, Object?> toJson() => {
-        'v': version,
-        'stars': stars,
-        'coins': coins,
-        'winStreak': winStreak,
-        'chestsOpened': chestsOpened,
-        'seenTiles': seenTiles.toList()..sort(),
-        'settings': settings.toJson(),
-        'daily': {'last': daily.last, 'streak': daily.streak, 'best': daily.best, 'freezeWeek': daily.freezeWeek},
-        'dailyResult': dailyResult,
-      };
+    'v': version,
+    'stars': stars,
+    'coins': coins,
+    'winStreak': winStreak,
+    'chestsOpened': chestsOpened,
+    'seenTiles': seenTiles.toList()..sort(),
+    'settings': settings.toJson(),
+    'daily': {'last': daily.last, 'streak': daily.streak, 'best': daily.best, 'freezeWeek': daily.freezeWeek},
+    'dailyResult': dailyResult,
+    'owned': owned.toList()..sort(),
+  };
 
   /// Reads any known version (unknown fields are ignored).
   static SaveData fromJson(Map<String, Object?> raw) {
@@ -94,14 +100,15 @@ class SaveData {
       settings: Settings.fromJson((m['settings'] as Map?)?.cast<String, Object?>() ?? const {}),
       daily: switch (m['daily']) {
         final Map d => DailyStreak(
-            last: (d['last'] as num).toInt(),
-            streak: (d['streak'] as num).toInt(),
-            best: (d['best'] as num).toInt(),
-            freezeWeek: (d['freezeWeek'] as num).toInt(),
-          ),
+          last: (d['last'] as num).toInt(),
+          streak: (d['streak'] as num).toInt(),
+          best: (d['best'] as num).toInt(),
+          freezeWeek: (d['freezeWeek'] as num).toInt(),
+        ),
         _ => null,
       },
       dailyResult: (m['dailyResult'] as Map?)?.cast<String, Object?>(),
+      owned: {...((m['owned'] as List?) ?? const []).cast<String>()},
     );
   }
 
@@ -117,6 +124,10 @@ class SaveData {
     if (v == 1) {
       // v2 added the Daily Jar streak/result and the reminders setting; defaults are right.
       v = 2;
+    }
+    if (v == 2) {
+      // v3 added store purchases ("owned"); none yet is right.
+      v = 3;
     }
     out['v'] = v;
     return out;

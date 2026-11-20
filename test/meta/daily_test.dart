@@ -137,7 +137,6 @@ void main() {
       expect(d.daily.last, 0);
       expect(d.settings.reminders, isFalse);
       expect(d.toJson()['v'], SaveData.version);
-      expect(SaveData.version, 2);
     });
   });
 }
