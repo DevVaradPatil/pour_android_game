@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'game/sand_screen.dart';
+import 'ui/theme.dart';
 
-void main() => runApp(const PourApp());
+void main() {
+  registerFontLicenses();
+  runApp(const PourApp());
+}
 
 class PourApp extends StatelessWidget {
   const PourApp({super.key, this.home = const SandScreen()});
@@ -14,12 +18,7 @@ class PourApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pour',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE8A54B),
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: buildPourTheme(),
       home: home,
     );
   }

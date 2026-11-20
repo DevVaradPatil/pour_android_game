@@ -9,6 +9,7 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
 - [ ] **Git:** OK to `git init` and commit? (Phase 0, now)
 - [ ] **Application ID / bundle ID.** Currently `com.pourgame.pour_sand_game`. It **can't change after the first Play upload**. Pick the final one. (Before Phase 11; ideally now)
 - [ ] **Game name** (GDD §18 Q4: Pour / Sandfall / Tilt & Pour / Grain). Check Play Store search competition. (Phase 2)
+  - The logo is built around **"P[jar]UR"**, with the jar standing in for the O. A name without an O (or similar) needs a new wordmark. The jar mark and app icon work with any name. Decide before store art (Phase 11).
 - [ ] **Splitter & fan in MVP?** GDD §8 uses them at L15/L18, but MVP §16 leaves them out. The plan includes them because they're cheap. (Phase 4)
 - [ ] **Target audience age.** Choosing under-13 brings Families policy ad limits. Recommended: 13+. (Phase 8)
 - [ ] **Music:** license a track, or approve a generated one. (Phase 7)

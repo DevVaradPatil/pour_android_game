@@ -8,6 +8,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 import '../sim/sand_sim.dart';
+import '../ui/brand.dart';
+import '../ui/gallery_screen.dart';
+import '../ui/tokens.dart';
 import '../sim/scenes.dart';
 import 'palette.dart';
 import 'tilt.dart';
@@ -221,7 +224,6 @@ class _SandScreenState extends State<SandScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1410),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onPanStart: _onPanStart,
@@ -237,8 +239,15 @@ class _SandScreenState extends State<SandScreen> with SingleTickerProviderStateM
                     padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
                     child: Row(
                       children: [
-                        const Text('POUR', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 6)),
+                        const Wordmark(height: 28),
                         const Spacer(),
+                        if (_dev)
+                          IconButton(
+                            tooltip: 'Design system',
+                            icon: const Icon(Icons.palette_outlined),
+                            onPressed: () => Navigator.of(context)
+                                .push(MaterialPageRoute<void>(builder: (_) => const GalleryScreen())),
+                          ),
                         IconButton(
                           tooltip: 'Recenter',
                           icon: const Icon(Icons.center_focus_strong),
@@ -275,7 +284,7 @@ class _SandScreenState extends State<SandScreen> with SingleTickerProviderStateM
                   top: 64,
                   child: ValueListenableBuilder<String>(
                     valueListenable: _stats,
-                    builder: (_, s, _) => Text(s, style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                    builder: (_, s, _) => Text(s, style: PourText.caption.copyWith(fontSize: 11, color: PourColors.textMuted)),
                   ),
                 ),
               const Positioned(
@@ -285,7 +294,7 @@ class _SandScreenState extends State<SandScreen> with SingleTickerProviderStateM
                 child: Text(
                   '← drag here to tilt →',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.white38),
+                  style: TextStyle(fontSize: 12, color: PourColors.outline),
                 ),
               ),
             ],
@@ -303,7 +312,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    canvas.drawRect(rect, Paint()..color = const Color(0xFF2A211B));
+    canvas.drawRect(rect, Paint()..color = PourColors.surface);
     final img = image.value;
     if (img == null) return;
     canvas.drawImageRect(

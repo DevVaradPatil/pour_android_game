@@ -130,16 +130,18 @@ Build the GDD §14 cellular automaton and nothing else.
 3. Rewrite only `sim_step` in C via `dart:ffi` (the pure-Dart boundary in `lib/sim/` makes this a contained swap)
 4. Fragment shader to colorize a 1-byte-per-cell texture (cuts CPU color work)
 
-### Phase 2 — Brand & design system `[ ]` (can overlap Phase 1)
+### Phase 2 — Brand & design system `[x]` (name decision still open — owner)
 - [ ] Name decision (GDD §18 Q4; owner, after a Play Store search check)
-- [ ] **Palette:** sand colors (6 primaries + mixed: blue, yellow, red, green, purple, orange, white, black) tuned for colorblind distinction (deuteranopia/protanopia check) + each sand color gets a **pattern/glyph** fallback on jars (accessibility)
-- [ ] UI tokens: warm "desert glass" theme (dark sand-brown background, cream text, amber accent), spacing scale (4/8/12/16/24/32), radius, elevation, motion durations/curves → `lib/ui/tokens.dart`
-- [ ] Typography: one rounded display font + one body font, both OFL (Google Fonts), **bundled** in `assets/fonts` (no runtime fetching)
-- [ ] Components: primary/secondary button (with press "squish"), icon button, coin/star counters, card, modal sheet, toggle/slider (settings), level node, star row, progress bar ("sand meter")
-- [ ] **Logo:** vector SVG drawn in-repo (a jar with a sand stream forming the "O"), wordmark in the display font; export PNGs with a script in `tool/`
-- [ ] **App icon:** adaptive Android icon (foreground + background layers, monochrome themed icon for Android 13+), iOS 1024 icon → `flutter_launcher_icons`
-- [ ] Splash: `flutter_native_splash` (solid color + logo; Android 12+ splash API)
-- [ ] `ui/gallery` debug screen showing every component (doubles as golden-test source)
+- [x] **Palette** (`SandColor` in `lib/game/palette.dart`): 8 sand colors; every pair ≥ 12.9 ΔE2000 under normal, protan, deutan and tritan simulation (was 1.3 for blue/purple under deutan). Each color has a **glyph** (circle, triangle, square, diamond, star, plus, ring, cross); dark sand gets a glass rim
+- [x] UI tokens (`lib/ui/tokens.dart`): Desert Glass colors, spacing, radii, motion; theme in `lib/ui/theme.dart` (always dark, own theme)
+- [x] Typography: Fredoka (display) + Nunito (body), OFL, bundled, licences registered in-app, `assets/CREDITS.md`
+- [x] Components (`lib/ui/components.dart`): `PourButton` (squish + lip), `RoundIconButton`, `CounterChip`, `StarRow`, `SandMeter`, `LevelNode`, `PourCard`; sliders/switches/sheets are themed Material
+- [x] **Logo** drawn in code (`LogoMarkPainter`): a corked jar of layered pixel sand tipped 10°, sand level with the world; `Wordmark` = P[jar]UR. Painted in code rather than SVG so the app, icon, splash and store art share one source; `tool/brand_export_test.dart` exports PNGs to `branding/`
+- [x] **App icon:** adaptive (fg/bg) + monochrome themed icon + iOS 1024 (no alpha) + 512 Play Store icon → `flutter_launcher_icons`
+- [x] Splash: `flutter_native_splash` incl. Android 12+ API
+- [x] Gallery screen (dev button in the top bar) = golden source `test/ui/goldens/gallery.png`
+
+**Results (2026-11-20):** palette/contrast tests, gallery golden, and a platform-config test (portrait lock, which the splash generator had silently removed) pass; 20 tests total. On the emulator: launcher icon, Android 12 splash, wordmark top bar, and gallery verified by screenshot.
 
 **Tests:** golden tests of the component gallery; contrast check (text ≥ 4.5:1) as a unit test over the token pairs.
 **Gate:** icon, splash and gallery verified on emulator (light/dark system theme both fine; game is always its own theme).
