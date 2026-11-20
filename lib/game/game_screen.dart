@@ -10,16 +10,17 @@ import 'package:sensors_plus/sensors_plus.dart';
 
 import '../level/level.dart';
 import '../level/level_run.dart';
+import '../meta/economy.dart';
+import '../meta/progress.dart';
 import '../ui/brand.dart';
 import '../ui/components.dart';
 import '../ui/tokens.dart';
 import 'play_kit.dart';
 
-/// Best stars per level path this session; [starsChanged] ticks on every update
-/// so the map refreshes even when levels were chained with Next.
-// ponytail: in memory until the Phase 5 save file.
-final Map<String, int> sessionStars = {};
-final starsChanged = ValueNotifier<int>(0);
+/// Haptics, unless the player turned them off.
+void haptic(Future<void> Function() feedback) {
+  if (progress.settings.haptics) feedback();
+}
 
 /// Plays `paths[index]` (paths relative to assets/levels/, e.g. "w1/001").
 class GameScreen extends StatefulWidget {
@@ -48,6 +49,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   LevelRun? _run;
   RunStatus _shown = RunStatus.playing;
   bool _paused = false;
+  Reward? _reward; // what the last win paid
   Replay? _auto; // drives input while watching a solution
   int _autoEvent = 0;
 
@@ -77,6 +79,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   void _restart() {
+    // Restarting a level in progress counts as a retry: the win streak ends.
+    if (_run?.status == RunStatus.playing && (_run?.tick ?? 0) > 60 && _auto == null) progress.recordFail();
     setState(() {
       _run = LevelRun(_level!);
       _shown = RunStatus.playing;
@@ -128,9 +132,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     if (run.status != _shown) {
       _shown = run.status;
       if (run.status == RunStatus.won) {
-        sessionStars[_path] = math.max(sessionStars[_path] ?? 0, run.stars);
-        starsChanged.value++;
-        HapticFeedback.mediumImpact();
+        _reward = progress.recordWin(_path, run.stars, boss: (widget.index + 1) % 10 == 0);
+        haptic(HapticFeedback.mediumImpact);
+      } else if (run.status == RunStatus.outOfSand) {
+        progress.recordFail();
       }
       setState(() {});
       if (widget.autoplay) _autoplayNext(run);
@@ -153,13 +158,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   void _toggleFan(int i) {
     _run?.toggleFan(i);
-    HapticFeedback.selectionClick();
+    haptic(HapticFeedback.selectionClick);
     setState(() {});
   }
 
   void _toggleValve(int i) {
     _run?.toggleValve(i);
-    HapticFeedback.selectionClick();
+    haptic(HapticFeedback.selectionClick);
     _renderer.dirty = true;
     setState(() {});
   }
@@ -490,6 +495,25 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         'Purity ${(run.avgPurity * 100).round()}%  ·  Spill ${(run.spill * 100).round()}%',
         style: PourText.body.copyWith(color: PourColors.textMuted),
       ),
+      if (_reward case final r? when r.total > 0) ...[
+        const SizedBox(height: Space.m),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.monetization_on_rounded, color: PourColors.coin),
+            const SizedBox(width: Space.xs),
+            Text('+${r.total}', style: PourText.number),
+            if (r.streakBonus > 0) ...[
+              const SizedBox(width: Space.m),
+              Text('${r.streak} in a row!', style: PourText.label.copyWith(color: PourColors.accent)),
+            ],
+          ],
+        ),
+      ],
+      if ((widget.index + 1) % 10 == 0) ...[
+        const SizedBox(height: Space.s),
+        Text('Album picture complete!', style: PourText.label.copyWith(color: PourColors.accent)),
+      ],
       const SizedBox(height: Space.xl),
       PourButton(
         label: hasNext ? 'Next' : 'Done',
