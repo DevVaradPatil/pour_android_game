@@ -21,11 +21,15 @@ final Map<String, int> sessionStars = {};
 
 /// Plays `paths[index]` (paths relative to assets/levels/, e.g. "w1/001").
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key, required this.paths, required this.index, this.accelStream});
+  const GameScreen({super.key, required this.paths, required this.index, this.accelStream, this.autoplay = false});
 
   final List<String> paths;
   final int index;
   final Stream<AccelerometerEvent>? accelStream;
+
+  /// Dev: play the recorded solution instead of reading input, log the result
+  /// (`AUTOPLAY ...` in logcat) and move on to the next level.
+  final bool autoplay;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -42,6 +46,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   LevelRun? _run;
   RunStatus _shown = RunStatus.playing;
   bool _paused = false;
+  Replay? _auto; // drives input while watching a solution
+  int _autoEvent = 0;
 
   String get _path => widget.paths[widget.index];
 
@@ -54,8 +60,17 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   Future<void> _load() async {
     final level = Level.fromJson(await rootBundle.loadString('assets/levels/$_path.json'));
+    if (widget.autoplay) _auto = await _loadReplay();
     if (!mounted) return;
     _level = level;
+    _restart();
+  }
+
+  Future<Replay> _loadReplay() async =>
+      Replay.fromJson(await rootBundle.loadString('assets/levels/$_path.replay.json'));
+
+  Future<void> _watchSolution() async {
+    _auto = await _loadReplay();
     _restart();
   }
 
@@ -64,6 +79,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       _run = LevelRun(_level!);
       _shown = RunStatus.playing;
       _paused = false;
+      _autoEvent = 0;
     });
     _tilt.recenterOnNextSample();
     _renderer.dirty = true;
@@ -83,7 +99,25 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     final n = _clock.ticks(elapsed);
     if (run == null || _paused) return;
     for (var i = 0; i < n; i++) {
-      run.setGravityDegrees(_tilt.angle);
+      final auto = _auto;
+      if (auto == null) {
+        run.setGravityDegrees(_tilt.angle);
+      } else {
+        // Same event application as LevelRun.play, so on-device results match level_check.
+        while (_autoEvent < auto.events.length && auto.events[_autoEvent][0] <= run.tick) {
+          final [_, kind, value] = auto.events[_autoEvent++];
+          switch (kind) {
+            case 0:
+              run.setGravityDegrees(value / 2);
+            case 1:
+              run.toggleValve(value);
+            case 2:
+              run.setSlowMo(value == 1);
+            case 3:
+              run.toggleFan(value);
+          }
+        }
+      }
       run.step();
       if (run.moved > 0) _renderer.dirty = true;
       if (run.tick % 6 == 0) _hud.value++;
@@ -96,7 +130,28 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         HapticFeedback.mediumImpact();
       }
       setState(() {});
+      if (widget.autoplay) _autoplayNext(run);
     }
+  }
+
+  Future<void> _autoplayNext(LevelRun run) async {
+    debugPrint('AUTOPLAY $_path ${run.summary()}');
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+    if (widget.index + 1 < widget.paths.length) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+        builder: (_) => GameScreen(paths: widget.paths, index: widget.index + 1, autoplay: true),
+      ));
+    } else {
+      debugPrint('AUTOPLAY done');
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _toggleFan(int i) {
+    _run?.toggleFan(i);
+    HapticFeedback.selectionClick();
+    setState(() {});
   }
 
   void _toggleValve(int i) {
@@ -207,8 +262,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 children: [
                   Positioned.fill(child: CustomPaint(painter: GridPainter(_renderer.image, PourColors.surface))),
                   Positioned.fill(child: CustomPaint(painter: _OverlayPainter(run, _hud, glyph))),
-                  for (final j in run.jars) _jarLabel(j, scale, glyph),
+                  for (final j in run.jars) j.def.slot ? _slotGlyph(j, scale) : _jarLabel(j, scale, glyph),
+                  for (final m in run.level.mixers) _mixerBadge(m, scale),
                   for (final (i, v) in run.level.valves.indexed) _valveButton(run, i, v, scale),
+                  for (final (i, f) in run.level.fans.indexed) _fanButton(run, i, f, scale),
                   if (run.level.hint != null) _hint(run),
                 ],
               );
@@ -235,6 +292,55 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 child: Icon(Icons.check_circle_rounded, size: size * 0.6, color: PourColors.accent),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Painting slots show their target glyph inside, above the fill line.
+  Widget _slotGlyph(JarState j, double scale) {
+    final r = j.def.r;
+    final size = math.min(r.w * scale * 0.85, 18.0);
+    return Positioned(
+      left: (r.x + r.w / 2) * scale - size / 2,
+      top: (r.y + (j.def.fillLineY - r.y) / 2) * scale - size / 2,
+      child: ValueListenableBuilder<int>(
+        valueListenable: _hud,
+        builder: (_, _, _) => Opacity(opacity: j.corked ? 0 : 0.9, child: SandGlyph(j.def.color, size: size)),
+      ),
+    );
+  }
+
+  Widget _mixerBadge(MixerDef m, double scale) => Positioned(
+        left: (m.r.x + m.r.w) * scale - 22,
+        top: m.r.y * scale + 4,
+        child: const Icon(Icons.cyclone_rounded, size: 18, color: PourColors.textMuted, semanticLabel: 'Mixer'),
+      );
+
+  Widget _fanButton(LevelRun run, int i, FanDef f, double scale) {
+    const size = 40.0;
+    final on = run.fanOn[i];
+    // Sits on the upwind edge of its zone.
+    final x = f.dir > 0 ? f.r.x * scale : (f.r.x + f.r.w) * scale - size;
+    return Positioned(
+      left: x.clamp(0, levelW * scale - size),
+      top: (f.r.y + f.r.h / 2) * scale - size / 2,
+      child: Semantics(
+        button: true,
+        label: on ? 'Turn fan off' : 'Turn fan on',
+        excludeSemantics: true,
+        child: Squish(
+          onTap: run.status == RunStatus.playing ? () => _toggleFan(i) : null,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: on ? PourColors.accent : PourColors.surfaceHigh.withValues(alpha: 0.9),
+              shape: BoxShape.circle,
+              border: Border.all(color: PourColors.text, width: 2),
+            ),
+            child: Icon(Icons.air_rounded, size: 22, color: on ? PourColors.onAccent : PourColors.text),
+          ),
         ),
       ),
     );
@@ -367,6 +473,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           expand: true,
           onPressed: () => Navigator.of(context).pop(),
         ),
+        if (!kReleaseMode) TextButton(onPressed: _watchSolution, child: const Text('Watch solution (dev)')),
       ]);
 
   Widget _wonCard(LevelRun run) {
@@ -428,8 +535,42 @@ class _OverlayPainter extends CustomPainter {
     final line = Paint()
       ..color = PourColors.glass.withValues(alpha: 0.8)
       ..strokeWidth = 1.5;
+    for (final m in run.level.mixers) {
+      final rr = RRect.fromRectAndRadius(
+          Rect.fromLTWH(m.r.x * s, m.r.y * s, m.r.w * s, m.r.h * s), const Radius.circular(6));
+      canvas.drawRRect(rr, Paint()..color = PourColors.glass.withValues(alpha: 0.06));
+      canvas.drawRRect(
+          rr,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5
+            ..color = PourColors.glass.withValues(alpha: 0.35));
+    }
+    for (final (i, f) in run.level.fans.indexed) {
+      if (!run.fanOn[i]) continue;
+      // Wind streaks drifting downwind.
+      final wind = Paint()
+        ..color = PourColors.glass.withValues(alpha: 0.35)
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round;
+      final phase = (run.tick * 2 * f.dir) % 24;
+      for (var y = f.r.y + 6; y < f.r.y + f.r.h; y += 14) {
+        for (var x = f.r.x + phase; x < f.r.x + f.r.w; x += 24) {
+          canvas.drawLine(Offset(x * s, y * s), Offset((x + 8 * f.dir) * s, y * s), wind);
+        }
+      }
+    }
     for (final j in run.jars) {
       final r = j.def.r;
+      if (j.def.slot) {
+        if (!j.corked) {
+          canvas.drawRect(Rect.fromLTWH(r.x * s, r.y * s, r.w * s, r.h * s),
+              Paint()..color = Color(0xFF000000 | j.def.color.rgb).withValues(alpha: 0.18));
+          final y = j.def.fillLineY * s;
+          canvas.drawLine(Offset(r.x * s, y), Offset((r.x + r.w) * s, y), line);
+        }
+        continue;
+      }
       if (!j.corked) {
         // Dashed fill line.
         final y = j.def.fillLineY * s;
