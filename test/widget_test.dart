@@ -10,7 +10,8 @@ void main() {
     await tester.pumpWidget(const PourApp());
     await tester.pumpAndSettle();
     expect(find.byType(Wordmark), findsOneWidget);
-    expect(find.byType(LevelNode), findsNWidgets(4));
+    expect(find.byType(LevelNode), findsWidgets);
+    expect(find.bySemanticsLabel('Play level 1'), findsOneWidget);
   });
 
   testWidgets('game screen loads a level with its jar and HUD', (tester) async {

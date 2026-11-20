@@ -304,7 +304,12 @@ class Level {
     }
     for (final (i, f) in filters.indexed) {
       final b = f.shape.bounds;
-      if (f.shape is! RectShape || math.min(b.w, b.h) > 2) out.add('filter $i must be a rect ≤ 2 cells thick');
+      final ok = switch (f.shape) {
+        RectShape() => math.min(b.w, b.h) <= 2,
+        LineShape(:final t) => t == 1,
+        _ => false,
+      };
+      if (!ok) out.add('filter $i must be a rect ≤ 2 thick or a line with t = 1');
     }
     for (final (i, v) in valves.indexed) {
       if (!inside(v.r)) out.add('valve $i is outside the field');

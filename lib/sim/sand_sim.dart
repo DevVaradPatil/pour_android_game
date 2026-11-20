@@ -147,13 +147,19 @@ class SandSim {
     }
   }
 
-  /// Thick line; thickness ≥ 2 keeps it 4-connected so diagonal moves can't leak through.
+  /// Thick line. Always 4-connected so diagonal moves can't leak through:
+  /// thickness ≥ 2 is by construction, thickness 1 draws a staircase (used for
+  /// sloped filters, whose columns must stay ≤ 2 cells for grains to hop through).
   void line(int x0, int y0, int x1, int y1, int type, {int thickness = 3}) {
     final steps = math.max((x1 - x0).abs(), (y1 - y0).abs());
+    var px = x0, py = y0;
     for (var s = 0; s <= steps; s++) {
       final t = steps == 0 ? 0.0 : s / steps;
       final cx = (x0 + (x1 - x0) * t).round(), cy = (y0 + (y1 - y0) * t).round();
+      if (thickness == 1 && cx != px && cy != py) set(cx, py, type); // close the diagonal gap
       fillRect(cx - thickness ~/ 2, cy - thickness ~/ 2, thickness, thickness, type);
+      px = cx;
+      py = cy;
     }
   }
 

@@ -1,0 +1,92 @@
+{
+  "id": "w1_006",
+  "name": "First Things First",
+  "seed": 6,
+  "concept": "Order: the steep pour for blue would also fling yellow past its jar",
+  "walls": [
+    {
+      "rect": [
+        15,
+        100,
+        80,
+        3
+      ]
+    },
+    {
+      "rect": [
+        12,
+        40,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        95,
+        70,
+        3,
+        33
+      ]
+    },
+    {
+      "rect": [
+        15,
+        230,
+        75,
+        3
+      ]
+    },
+    {
+      "rect": [
+        12,
+        190,
+        3,
+        43
+      ]
+    }
+  ],
+  "sand": [
+    {
+      "color": "blue",
+      "rect": [
+        15,
+        72,
+        80,
+        28
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        15,
+        198,
+        40,
+        32
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "blue",
+      "rect": [
+        140,
+        115,
+        70,
+        45
+      ],
+      "fill": 0.18,
+      "purity": 0.8
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        146,
+        290,
+        30,
+        50
+      ],
+      "fill": 0.35,
+      "purity": 0.8
+    }
+  ]
+}

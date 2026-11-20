@@ -115,6 +115,29 @@ void main() {
     expect(r.status, RunStatus.won);
   });
 
+  test('closing a valve mid-flow seals it (no leaking through grains caught in it)', () {
+    final l = level(
+      sand: [block('blue', 105, 150, 30, 50)],
+      valves: [
+        {'rect': [95, 210, 50, 3]},
+      ],
+      walls: hopper,
+    );
+    final r = LevelRun(l)..toggleValve(0);
+    for (var t = 0; t < 8; t++) {
+      r.step(); // sand is streaming through the open valve
+    }
+    r.toggleValve(0);
+    for (var t = 0; t < 30; t++) {
+      r.step(); // what was below the valve falls away
+    }
+    final below = r.jars.single.total + r.lostGrains;
+    for (var t = 0; t < 300; t++) {
+      r.step();
+    }
+    expect(r.jars.single.total + r.lostGrains, below); // nothing more came through
+  });
+
   test('stars: spill costs the third star, impurity the second', () {
     // 1800 extra grains fall into the void ⇒ spill > 10%.
     final spilled = runFor(level(sand: [block('blue', 105, 200, 30, 50), block('blue', 10, 360, 30, 60)]), 600);

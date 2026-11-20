@@ -1,0 +1,67 @@
+{
+  "id": "w1_005",
+  "name": "Funnel",
+  "seed": 5,
+  "hint": "Pour into the funnel, then level out",
+  "concept": "A funnel turns a wide pour into a precise stream",
+  "walls": [
+    {
+      "rect": [
+        18,
+        110,
+        87,
+        3
+      ]
+    },
+    {
+      "rect": [
+        15,
+        40,
+        3,
+        73
+      ]
+    },
+    {
+      "line": [
+        110,
+        150,
+        148,
+        215
+      ],
+      "t": 3
+    },
+    {
+      "line": [
+        220,
+        150,
+        162,
+        215
+      ],
+      "t": 3
+    }
+  ],
+  "sand": [
+    {
+      "color": "green",
+      "rect": [
+        18,
+        74,
+        46,
+        36
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "green",
+      "rect": [
+        137,
+        235,
+        36,
+        50
+      ],
+      "fill": 0.45,
+      "purity": 0.8
+    }
+  ]
+}

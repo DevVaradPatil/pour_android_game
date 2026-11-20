@@ -1,0 +1,127 @@
+{
+  "id": "w1_012",
+  "name": "Shared Chute",
+  "seed": 12,
+  "concept": "Both colors use one channel; the filter sorts at the end",
+  "walls": [
+    {
+      "rect": [
+        147,
+        20,
+        3,
+        73
+      ]
+    },
+    {
+      "rect": [
+        204,
+        20,
+        3,
+        73
+      ]
+    },
+    {
+      "rect": [
+        150,
+        90,
+        54,
+        3
+      ]
+    },
+    {
+      "line": [
+        205,
+        110,
+        115,
+        200
+      ],
+      "t": 3
+    },
+    {
+      "rect": [
+        37,
+        190,
+        3,
+        42
+      ]
+    },
+    {
+      "rect": [
+        135,
+        230,
+        11,
+        2
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        167,
+        90,
+        20,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "filters": [
+    {
+      "color": "blue",
+      "rect": [
+        40,
+        230,
+        95,
+        2
+      ]
+    }
+  ],
+  "sand": [
+    {
+      "color": "blue",
+      "rect": [
+        150,
+        40,
+        27,
+        50
+      ]
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        177,
+        40,
+        27,
+        50
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "blue",
+      "rect": [
+        40,
+        280,
+        93,
+        45
+      ],
+      "fill": 0.25,
+      "purity": 0.8
+    },
+    {
+      "color": "yellow",
+      "rect": [
+        160,
+        265,
+        70,
+        50
+      ],
+      "fill": 0.3,
+      "purity": 0.7
+    }
+  ],
+  "stars": {
+    "purity": 0.9,
+    "spill": 0.25
+  }
+}

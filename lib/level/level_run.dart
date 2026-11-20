@@ -106,7 +106,14 @@ class LevelRun {
     if (valveOpen[i]) {
       sim.replaceInRect(r.x, r.y, r.w, r.h, Cell.gate, Cell.empty);
     } else {
-      sim.replaceInRect(r.x, r.y, r.w, r.h, Cell.empty, Cell.gate); // closes around any grains in the way
+      // Seal completely: grains caught in the valve are removed (≤ w×3), otherwise
+      // they'd leave holes and the hopper would keep leaking after closing.
+      for (var y = r.y; y < r.y + r.h; y++) {
+        for (var x = r.x; x < r.x + r.w; x++) {
+          final c = sim.get(x, y);
+          if (c == Cell.empty || Cell.isSand(c)) sim.set(x, y, Cell.gate);
+        }
+      }
     }
     events.add([tick, 1, i]);
   }

@@ -1,0 +1,67 @@
+{
+  "id": "w1_014",
+  "name": "Tight Budget",
+  "seed": 14,
+  "hint": "Not much to spare",
+  "concept": "Spill matters: barely more sand than the jar needs",
+  "walls": [
+    {
+      "rect": [
+        135,
+        110,
+        87,
+        3
+      ]
+    },
+    {
+      "rect": [
+        222,
+        40,
+        3,
+        73
+      ]
+    },
+    {
+      "line": [
+        20,
+        150,
+        78,
+        215
+      ],
+      "t": 3
+    },
+    {
+      "line": [
+        130,
+        150,
+        92,
+        215
+      ],
+      "t": 3
+    }
+  ],
+  "sand": [
+    {
+      "color": "red",
+      "rect": [
+        176,
+        74,
+        46,
+        36
+      ]
+    }
+  ],
+  "jars": [
+    {
+      "color": "red",
+      "rect": [
+        60,
+        235,
+        50,
+        50
+      ],
+      "fill": 0.6,
+      "purity": 0.8
+    }
+  ]
+}

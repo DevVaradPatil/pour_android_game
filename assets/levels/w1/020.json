@@ -1,0 +1,227 @@
+{
+  "id": "w1_020",
+  "name": "Desert Sunset",
+  "seed": 20,
+  "hint": "One color at a time: aim, fill, close",
+  "concept": "Boss: hoppers in reverse order; aim each color at its slots and close in time",
+  "walls": [
+    {
+      "rect": [
+        62,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        89,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        65,
+        80,
+        24,
+        3
+      ]
+    },
+    {
+      "rect": [
+        90,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        117,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        93,
+        80,
+        24,
+        3
+      ]
+    },
+    {
+      "rect": [
+        118,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        145,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        121,
+        80,
+        24,
+        3
+      ]
+    },
+    {
+      "rect": [
+        146,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        173,
+        20,
+        3,
+        63
+      ]
+    },
+    {
+      "rect": [
+        149,
+        80,
+        24,
+        3
+      ]
+    },
+    {
+      "rect": [
+        90,
+        278,
+        2,
+        22
+      ]
+    },
+    {
+      "rect": [
+        118,
+        278,
+        2,
+        22
+      ]
+    },
+    {
+      "rect": [
+        146,
+        278,
+        2,
+        22
+      ]
+    }
+  ],
+  "valves": [
+    {
+      "rect": [
+        75,
+        80,
+        4,
+        3
+      ],
+      "open": false
+    },
+    {
+      "rect": [
+        103,
+        80,
+        4,
+        3
+      ],
+      "open": false
+    },
+    {
+      "rect": [
+        131,
+        80,
+        4,
+        3
+      ],
+      "open": false
+    },
+    {
+      "rect": [
+        159,
+        80,
+        4,
+        3
+      ],
+      "open": false
+    }
+  ],
+  "sand": [
+    {
+      "color": "yellow",
+      "rect": [
+        65,
+        40,
+        24,
+        40
+      ]
+    },
+    {
+      "color": "orange",
+      "rect": [
+        93,
+        40,
+        24,
+        40
+      ]
+    },
+    {
+      "color": "red",
+      "rect": [
+        121,
+        40,
+        24,
+        40
+      ]
+    },
+    {
+      "color": "purple",
+      "rect": [
+        149,
+        40,
+        24,
+        40
+      ]
+    }
+  ],
+  "frames": [
+    {
+      "x": 64,
+      "y": 300,
+      "slot": [
+        12,
+        30
+      ],
+      "fill": 0.5,
+      "purity": 0.8,
+      "colors": [
+        "purple",
+        "purple",
+        "red",
+        "red",
+        "orange",
+        "orange",
+        "yellow",
+        "yellow"
+      ]
+    }
+  ]
+}
