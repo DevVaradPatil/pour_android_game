@@ -20,7 +20,11 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
 
 ## Emulator / devices
 
-- [x] **Emulator storage.** Resolved 2026-11-20: Claude created the project AVD `Pour_API_36` (8 GB data). `Medium_Phone_API_36.1` is untouched and still full.
+- [ ] **Emulator storage (blocks Claude's device checks).** `Medium_Phone_API_36.1` has ~330 MB free and no build installs. Claude deleted its own leftovers (old recordings) and the extra AVD it had made, and won't touch your apps. To unblock, pick one:
+  - Uninstall one app on it (`in.sawari.sawari` or `com.varad.bolo`), or
+  - Android Studio → Device Manager → the AVD → Edit → Advanced → Internal Storage 8 GB → Wipe Data (removes those apps).
+  - Note: the Android Emulator was updated to 37.3.10 (2026-11-21), so the old quick-boot snapshot no longer loads; it cold-boots fine.
+- [ ] **Phase 8 phone test** (`dist/pour-phase8-arm64.apk`): see the checklist in PLAN.md Phase 8.
 - [ ] **A real low-end Android phone** (2020-era, 3–4 GB RAM, e.g. Helio G-series) with USB debugging on. Needed for the performance gate. (Phase 1, again in 7 and 10)
 - [ ] At least one more real Android phone, ideally a different maker, for tilt-feel calibration. (Phase 1)
 - [ ] **Toy test:** hand the Phase 1 build to 5 people with no instructions and note whether they keep playing past 2 minutes. (End of Phase 1)
