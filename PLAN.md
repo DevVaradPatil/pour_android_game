@@ -233,15 +233,28 @@ Bugs found and fixed along the way: closing a valve mid-flow left holes (the hop
 
 **Known limits:** waveforms checked by spectrogram only — nobody has listened yet (owner, real phone). The jar "hop" moves the jar's glyph, not the jar pixels. No filter sound and no vibration amplitude control (would need the `vibration` package + VIBRATE permission). Music is a generated placeholder (TODO.md).
 
-### Phase 8 — Monetization `[ ]`
-- [ ] AdMob: rewarded (+Sand on fail, Undo, double coins, chest boost); interstitial (after win, level ≥ 15, ≥ 3 min apart, never after fail)
-- [ ] **Google UMP consent** (GDPR/EEA required) before any ad request
-- [ ] IAP: Remove Ads (non-consumable), Starter pack (once, after L10); restore purchases
-- [ ] Boosters: Undo Pour (rewind 3 s — uses the replay/snapshot ring buffer), +Sand, Slow-mo
-- [ ] Everything works offline / with ads failing to load (no blocked progress, ever)
+### Phase 8 — Monetization `[~]` (code done; device gate on the owner's phone)
+- [x] AdMob (`google_mobile_ads`, Google **test** IDs): rewarded for +Sand, Undo, double level coins, chest boost; interstitial only when leaving a won level, level ≥ 15, ≥ 3 min apart and ≥ 3 min after launch, never after a fail, never with Remove Ads (`interstitialDue` in economy.dart)
+- [x] **Google UMP consent** before any ad request; "Ad privacy choices" in Settings where required. `--dart-define=UMP_EEA=true` forces the EEA form (test devices only)
+- [x] IAP (`in_app_purchase`): `remove_ads`, `starter_pack` (remove ads + 500 coins; offered once 10 levels are done), restore; grant once per save (save v3 `owned`), always acknowledged. Shop sheet from home
+- [x] Boosters: Undo (rewind ~3 s via sim snapshots every 60 ticks; replay stays exact) and +Sand (drops the missing color where it started; replay event kind 4) for 30 / 40 coins or an ad. Slow-mo stays free (hold): it's an accessibility aid and limiting it would be pay-to-win
+- [x] Never blocks: no ad (offline, no consent, load failure) = the option is greyed ("No ad right now") or hidden; the level waits while a booster offer is open
 
 **Tests:** ad pacing rules unit-tested with a fake clock; purchase state machine tests; emulator run with **Google test ad unit IDs only**; IAP via Play Console license testers (owner, TODO.md).
 **Gate:** emulator: rewarded test ad grants reward exactly once; interstitial pacing correct; app usable in airplane mode.
+
+**Results (2026-11-21):** 182 tests: pacing with a fake clock, reward once / double-tap / closed early, no-ad path, purchase state machine (grant once, always complete, pending/error/cancel grant nothing), coins, save v2→v3, undo exactness against a replay, +Sand replay reproduction, AdMob ids and keep rule present. Emulator: the release build installed once and **crashed at launch** (R8 renamed WorkManager's Room database, pulled in by the ads SDK) → fixed with `proguard-rules.pro`. The fixed build couldn't be installed (emulator storage, TODO.md), so the device gate moves to the owner's phone:
+
+Phone checklist (`dist/pour-phase8-arm64.apk`, installs over Phase 7):
+1. App opens (the crash fix); home shows a shop (storefront) button. Shop says the store isn't available (expected until Play Console products exist).
+2. In a level, tilt the wrong way until **Out of sand** → **Add sand** → **Watch an ad**: a Google "Test Ad" plays; close it after the reward → sand appears and play continues. Repeat with the coins option (40).
+3. Mid-level, tap ↶ (rewind) → coins or ad → the board jumps back ~3 s.
+4. Win a level that pays coins → **Watch an ad: +N more** → coin total doubles once.
+5. After 3+ minutes in the app, win level 15 or later and tap **Next**: one full-screen test ad. Win again right away: no ad. Never after Out of sand.
+6. Airplane mode: everything still works; ad options show "No ad right now" or disappear.
+7. Star chest dialog: **Ad: +50 more**.
+
+**Known limits:** consent form not seen on a device yet (needs an EEA test device or the owner's AdMob consent message, TODO.md). IAP untestable until Play Console products + a testing track exist. No server-side receipt check.
 
 ### Phase 9 — Analytics & crash reporting `[ ]`
 - [ ] Firebase Analytics events from GDD §14 (+ `level_quit` with time-in-level)

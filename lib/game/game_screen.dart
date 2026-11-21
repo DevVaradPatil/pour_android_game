@@ -15,6 +15,7 @@ import '../meta/album.dart';
 import '../meta/daily.dart';
 import '../meta/economy.dart';
 import '../meta/progress.dart';
+import '../services/ads.dart';
 import '../services/audio.dart';
 import '../services/notifications.dart';
 import '../ui/brand.dart';
@@ -66,6 +67,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   LevelRun? _run;
   RunStatus _shown = RunStatus.playing;
   bool _paused = false;
+  bool _holding = false; // a booster offer is open: the level waits
+  bool _doubled = false; // win coins doubled by an ad
   Reward? _reward; // what the last win paid
   DailyOutcome? _dailyOutcome;
   int _dailyScore = 0;
@@ -117,6 +120,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       _run = LevelRun(_level!);
       _shown = RunStatus.playing;
       _paused = false;
+      _doubled = false;
       _autoEvent = 0;
       _hops = List.filled(_level!.jars.length, 0);
       _corkTick = List.filled(_level!.jars.length, -1);
@@ -143,7 +147,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   void _onTick(Duration elapsed) {
     final run = _run;
     final n = _clock.ticks(elapsed);
-    if (run == null || _paused) {
+    if (run == null || _paused || _holding) {
       audio.flow(0, 0);
       return;
     }
@@ -154,17 +158,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       } else {
         // Same event application as LevelRun.play, so on-device results match level_check.
         while (_autoEvent < auto.events.length && auto.events[_autoEvent][0] <= run.tick) {
-          final [_, kind, value] = auto.events[_autoEvent++];
-          switch (kind) {
-            case 0:
-              run.setGravityDegrees(value / 2);
-            case 1:
-              run.toggleValve(value);
-            case 2:
-              run.setSlowMo(value == 1);
-            case 3:
-              run.toggleFan(value);
-          }
+          run.apply(auto.events[_autoEvent++]);
         }
       }
       run.step();
@@ -313,6 +307,86 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved ${file.path}')));
   }
 
+  /// Offers a booster for coins or a rewarded ad; the level waits meanwhile.
+  Future<void> _booster(String title, int coins, VoidCallback apply) async {
+    setState(() => _holding = true);
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => ListenableBuilder(
+        listenable: Listenable.merge([ads, progress]),
+        builder: (context, _) => AlertDialog(
+          title: Text(title, style: PourText.title, textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PourButton(
+                label: '$coins coins',
+                icon: Icons.monetization_on_rounded,
+                expand: true,
+                onPressed: progress.data.coins >= coins ? () => Navigator.of(context).pop('coins') : null,
+              ),
+              const SizedBox(height: Space.xs),
+              Text('You have ${progress.data.coins}', style: PourText.caption.copyWith(color: PourColors.textMuted)),
+              const SizedBox(height: Space.m),
+              PourButton(
+                label: ads.rewardedReady ? 'Watch an ad' : 'No ad right now',
+                icon: Icons.ondemand_video_rounded,
+                style: PourButtonStyle.secondary,
+                expand: true,
+                onPressed: ads.rewardedReady ? () => Navigator.of(context).pop('ad') : null,
+              ),
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+            ],
+          ),
+        ),
+      ),
+    );
+    final ok = switch (choice) {
+      'coins' => progress.spend(coins),
+      'ad' => await ads.rewarded(),
+      _ => false,
+    };
+    if (!mounted) return;
+    if (ok) apply();
+    setState(() => _holding = false);
+  }
+
+  /// Booster: rewind ~3 s.
+  void _undo() {
+    final run = _run!..undo();
+    _corked = run.jars.where((j) => j.corked).length;
+    for (final (i, j) in run.jars.indexed) {
+      if (!j.corked) _corkTick[i] = -1;
+    }
+    _shown = run.status;
+    _renderer.dirty = true;
+    audio.sfx(Sfx.fan);
+  }
+
+  /// Booster: more sand of each missing color.
+  void _addSand() {
+    final run = _run!;
+    for (final c in run.shortColors.toList()) {
+      run.addSand(c);
+    }
+    _shown = run.status;
+    _renderer.dirty = true;
+    audio.sfx(Sfx.reveal);
+  }
+
+  Future<void> _doubleCoins() async {
+    final r = _reward;
+    if (r == null || _doubled || !await ads.rewarded() || !mounted) return;
+    progress.addCoins(r.total);
+    setState(() => _doubled = true);
+  }
+
+  /// Leaving a won level: an interstitial may show first (pacing rules in economy.dart).
+  Future<void> _afterWin(VoidCallback go) async {
+    await ads.afterWin(widget.index + 1);
+    if (mounted) go();
+  }
+
   void _next() => Navigator.of(context).pushReplacement(
     MaterialPageRoute<void>(
       builder: (_) => GameScreen(paths: widget.paths, index: widget.index + 1, accelStream: widget.accelStream),
@@ -376,6 +450,14 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             ],
           ),
         ),
+        if (widget.daily == null) ...[
+          RoundIconButton(
+            icon: Icons.undo_rounded,
+            tooltip: 'Rewind 3 seconds',
+            onPressed: run.status == RunStatus.playing ? () => _booster('Rewind 3 seconds?', undoCoins, _undo) : null,
+          ),
+          const SizedBox(width: Space.s),
+        ],
         RoundIconButton(icon: Icons.center_focus_strong_rounded, tooltip: 'Recenter', onPressed: _tilt.recenter),
         const SizedBox(width: Space.s),
         RoundIconButton(icon: Icons.refresh_rounded, tooltip: 'Restart', onPressed: _restart),
@@ -738,7 +820,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           children: [
             const Icon(Icons.monetization_on_rounded, color: PourColors.coin),
             const SizedBox(width: Space.xs),
-            Text('+${r.total}', style: PourText.number),
+            Text('+${r.total * (_doubled ? 2 : 1)}', style: PourText.number),
             if (r.streakBonus > 0) ...[
               const SizedBox(width: Space.m),
               Text('${r.streak} in a row!', style: PourText.label.copyWith(color: PourColors.accent)),
@@ -746,6 +828,17 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           ],
         ),
       ],
+      if (_reward case final r? when r.total > 0 && !_doubled)
+        ListenableBuilder(
+          listenable: ads,
+          builder: (_, _) => ads.rewardedReady
+              ? TextButton.icon(
+                  onPressed: _doubleCoins,
+                  icon: const Icon(Icons.ondemand_video_rounded),
+                  label: Text('Watch an ad: +${r.total} more'),
+                )
+              : const SizedBox.shrink(),
+        ),
       if (_newTile) ...[
         const SizedBox(height: Space.m),
         _AlbumTileFly(widget.index, boss: (widget.index + 1) % 10 == 0),
@@ -755,7 +848,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         label: hasNext ? 'Next' : 'Done',
         icon: hasNext ? Icons.arrow_forward_rounded : null,
         expand: true,
-        onPressed: hasNext ? _next : () => Navigator.of(context).pop(),
+        onPressed: () => _afterWin(hasNext ? _next : () => Navigator.of(context).pop()),
       ),
       const SizedBox(height: Space.m),
       PourButton(label: 'Replay', style: PourButtonStyle.secondary, expand: true, onPressed: _restart),
@@ -777,7 +870,30 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       style: PourText.body.copyWith(color: PourColors.textMuted),
     ),
     const SizedBox(height: Space.xl),
-    PourButton(label: 'Retry', icon: Icons.refresh_rounded, expand: true, onPressed: _restart),
+    if (widget.daily == null) ...[
+      PourButton(
+        label: 'Add sand',
+        icon: Icons.add_circle_rounded,
+        expand: true,
+        onPressed: () => _booster('Add more sand?', sandCoins, _addSand),
+      ),
+      const SizedBox(height: Space.m),
+      PourButton(
+        label: 'Rewind 3 seconds',
+        icon: Icons.undo_rounded,
+        style: PourButtonStyle.secondary,
+        expand: true,
+        onPressed: () => _booster('Rewind 3 seconds?', undoCoins, _undo),
+      ),
+      const SizedBox(height: Space.m),
+    ],
+    PourButton(
+      label: 'Retry',
+      icon: Icons.refresh_rounded,
+      style: widget.daily == null ? PourButtonStyle.secondary : PourButtonStyle.primary,
+      expand: true,
+      onPressed: _restart,
+    ),
     const SizedBox(height: Space.m),
     PourButton(
       label: 'Levels',

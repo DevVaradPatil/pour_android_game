@@ -18,6 +18,29 @@ class Progress extends ChangeNotifier {
   int starsFor(String path) => data.stars[path] ?? 0;
   int get chestsReady => chestsEarned(data.totalStars) - data.chestsOpened;
   Settings get settings => data.settings;
+  bool get removeAds => data.owned.contains(removeAdsId) || data.owned.contains(starterPackId);
+
+  /// Pays [coins] if there are enough; false (and no change) otherwise.
+  bool spend(int coins) {
+    if (data.coins < coins) return false;
+    data.coins -= coins;
+    _changed();
+    return true;
+  }
+
+  void addCoins(int coins) {
+    data.coins += coins;
+    _changed();
+  }
+
+  /// A store purchase arrived (bought or restored). Grants it once per save;
+  /// false if this save already had it.
+  bool grant(String product) {
+    if (!data.owned.add(product)) return false;
+    if (product == starterPackId) data.coins += starterPackCoins;
+    _changed();
+    return true;
+  }
 
   /// A level was won. Keeps the best stars, pays coins for improvements and
   /// streak milestones.
@@ -75,7 +98,9 @@ class Progress extends ChangeNotifier {
         'stars': stars,
         'purity': purity,
         'ticks': ticks,
-        'jars': [for (final (c, p) in jars) [c.name, p]],
+        'jars': [
+          for (final (c, p) in jars) [c.name, p],
+        ],
       };
     }
     if (first) data.coins += dailyCoins;

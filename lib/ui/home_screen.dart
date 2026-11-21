@@ -10,12 +10,14 @@ import '../game/sand_screen.dart';
 import '../level/level_check.dart';
 import '../meta/daily.dart';
 import '../meta/progress.dart';
+import '../services/ads.dart';
 import '../services/notifications.dart';
 import 'album_screen.dart';
 import 'brand.dart';
 import 'components.dart';
 import 'gallery_screen.dart';
 import 'settings_screen.dart';
+import 'shop_sheet.dart';
 import 'tokens.dart';
 
 /// Title + World 1 map: a winding path of level nodes, boss every 10th.
@@ -28,12 +30,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const double _rowH = 104;
-  late final Future<List<String>> _paths = rootBundle
-      .loadString('assets/levels/levels.json')
-      .then(parseLevelIndex);
-  late final Future<List<String>> _dailyPool = rootBundle
-      .loadString('assets/levels/daily.json')
-      .then(parseLevelIndex);
+  late final Future<List<String>> _paths = rootBundle.loadString('assets/levels/levels.json').then(parseLevelIndex);
+  late final Future<List<String>> _dailyPool = rootBundle.loadString('assets/levels/daily.json').then(parseLevelIndex);
   final _scroll = ScrollController();
   bool _scrolledToCurrent = false;
 
@@ -50,8 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Sequential unlocking; dev builds open everything for testing.
-  bool _unlocked(List<String> paths, int i) =>
-      !kReleaseMode || i == 0 || progress.starsFor(paths[i - 1]) > 0;
+  bool _unlocked(List<String> paths, int i) => !kReleaseMode || i == 0 || progress.starsFor(paths[i - 1]) > 0;
 
   Future<void> _play(List<String> paths, int i, {bool autoplay = false}) async {
     await Navigator.of(context).push(
@@ -97,7 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       !done
                           ? 'A new jar is ready'
-                          : (r != null && r['n'] == day ? '${'★' * ((r['stars'] as num).toInt())} ${r['score']} pts' : 'Done'),
+                          : (r != null && r['n'] == day
+                                ? '${'★' * ((r['stars'] as num).toInt())} ${r['score']} pts'
+                                : 'Done'),
                       style: PourText.heading.copyWith(fontSize: 17),
                     ),
                     if (streak > 0)
@@ -126,9 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   );
 
-  void _push(Widget screen) => Navigator.of(
-    context,
-  ).push(MaterialPageRoute<void>(builder: (_) => screen));
+  void _push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 
   Future<void> _openChest() async {
     final coins = progress.openChest();
@@ -139,13 +136,27 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: const Icon(Icons.card_giftcard_rounded, size: 48, color: PourColors.accent),
         title: Text('Star chest!', style: PourText.title, textAlign: TextAlign.center),
         content: Text('+$coins coins', style: PourText.heading, textAlign: TextAlign.center),
-        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Nice'))],
+        actions: [
+          ListenableBuilder(
+            listenable: ads,
+            builder: (context, _) => ads.rewardedReady
+                ? TextButton.icon(
+                    icon: const Icon(Icons.ondemand_video_rounded),
+                    label: Text('Ad: +$coins more'),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      if (await ads.rewarded()) progress.addCoins(coins);
+                    },
+                  )
+                : const SizedBox.shrink(),
+          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Nice')),
+        ],
       ),
     );
   }
 
-  double _nodeX(int i, double width) =>
-      width / 2 + math.sin(i * 0.85) * width * 0.27;
+  double _nodeX(int i, double width) => width / 2 + math.sin(i * 0.85) * width * 0.27;
 
   @override
   Widget build(BuildContext context) {
@@ -153,10 +164,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: FutureBuilder<List<String>>(
           future: _paths,
-          builder: (context, snap) => ListenableBuilder(
-            listenable: progress,
-            builder: (context, _) => _map(context, snap.data),
-          ),
+          builder: (context, snap) =>
+              ListenableBuilder(listenable: progress, builder: (context, _) => _map(context, snap.data)),
         ),
       ),
     );
@@ -170,40 +179,21 @@ class _HomeScreenState extends State<HomeScreen> {
       _scrolledToCurrent = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scroll.hasClients) {
-          _scroll.jumpTo(
-            math.max(
-              0,
-              math.min(_scroll.position.maxScrollExtent, (current - 1) * _rowH),
-            ),
-          );
+          _scroll.jumpTo(math.max(0, math.min(_scroll.position.maxScrollExtent, (current - 1) * _rowH)));
         }
       });
     }
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Space.xl,
-            Space.l,
-            Space.xl,
-            Space.s,
-          ),
+          padding: const EdgeInsets.fromLTRB(Space.xl, Space.l, Space.xl, Space.s),
           child: Row(
             children: [
               const Wordmark(height: 36),
               const Spacer(),
-              CounterChip(
-                icon: Icons.monetization_on_rounded,
-                value: progress.data.coins,
-                label: 'coins',
-              ),
+              CounterChip(icon: Icons.monetization_on_rounded, value: progress.data.coins, label: 'coins'),
               const SizedBox(width: Space.s),
-              CounterChip(
-                icon: Icons.star_rounded,
-                value: stars,
-                iconColor: PourColors.accent,
-                label: 'stars',
-              ),
+              CounterChip(icon: Icons.star_rounded, value: stars, iconColor: PourColors.accent, label: 'stars'),
             ],
           ),
         ),
@@ -211,10 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: Space.l),
           child: Row(
             children: [
-              Text(
-                'World 1 · Desert Glass',
-                style: PourText.heading.copyWith(color: PourColors.textMuted),
-              ),
+              Text('World 1 · Desert Glass', style: PourText.heading.copyWith(color: PourColors.textMuted)),
               const Spacer(),
               if (progress.chestsReady > 0)
                 Badge.count(
@@ -226,6 +213,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: _openChest,
                   ),
                 ),
+              const SizedBox(width: Space.s),
+              RoundIconButton(icon: Icons.storefront_rounded, tooltip: 'Shop', onPressed: () => showShop(context)),
               const SizedBox(width: Space.s),
               RoundIconButton(
                 icon: Icons.photo_library_rounded,
@@ -253,12 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Positioned.fill(
                       child: CustomPaint(
-                        painter: _PathPainter(
-                          paths.length,
-                          _rowH,
-                          (i) => _nodeX(i, c.maxWidth),
-                          current,
-                        ),
+                        painter: _PathPainter(paths.length, _rowH, (i) => _nodeX(i, c.maxWidth), current),
                       ),
                     ),
                     for (final (i, p) in paths.indexed)
@@ -273,18 +257,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               stars: progress.starsFor(p),
                               state: !_unlocked(paths, i)
                                   ? LevelState.locked
-                                  : (i == current
-                                        ? LevelState.current
-                                        : LevelState.open),
+                                  : (i == current ? LevelState.current : LevelState.open),
                               onTap: () => _play(paths, i),
                             ),
                             if ((i + 1) % 10 == 0)
-                              Text(
-                                'BOSS',
-                                style: PourText.label.copyWith(
-                                  color: PourColors.accent,
-                                ),
-                              ),
+                              Text('BOSS', style: PourText.label.copyWith(color: PourColors.accent)),
                           ],
                         ),
                       ),
@@ -295,12 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Space.xl,
-            Space.s,
-            Space.xl,
-            Space.m,
-          ),
+          padding: const EdgeInsets.fromLTRB(Space.xl, Space.s, Space.xl, Space.m),
           child: PourButton(
             label: 'Play level ${current + 1}',
             icon: Icons.play_arrow_rounded,
@@ -312,33 +284,24 @@ class _HomeScreenState extends State<HomeScreen> {
           Wrap(
             alignment: WrapAlignment.center,
             children: [
+              TextButton(onPressed: () => _push(const SandScreen()), child: const Text('Sandbox')),
+              TextButton(onPressed: () => _push(const GalleryScreen()), child: const Text('Design system')),
+              TextButton(onPressed: () => _play(paths, 0, autoplay: true), child: const Text('Autoplay all')),
               TextButton(
-                onPressed: () => _push(const SandScreen()),
-                child: const Text('Sandbox'),
+                onPressed: () => setState(() => debugDayOffset++),
+                child: Text('+1 day (${debugDayOffset >= 0 ? '+' : ''}$debugDayOffset)'),
               ),
               TextButton(
-                onPressed: () => _push(const GalleryScreen()),
-                child: const Text('Design system'),
+                onPressed: () async {
+                  await notifications.requestPermission();
+                  await notifications.schedule(
+                    DateTime.now().add(const Duration(seconds: 10)),
+                    'Your Daily Jar is ready',
+                    'Test reminder (dev)',
+                  );
+                },
+                child: const Text('Test reminder'),
               ),
-              TextButton(
-                onPressed: () => _play(paths, 0, autoplay: true),
-                child: const Text('Autoplay all'),
-              ),
-                TextButton(
-                  onPressed: () => setState(() => debugDayOffset++),
-                  child: Text('+1 day (${debugDayOffset >= 0 ? '+' : ''}$debugDayOffset)'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await notifications.requestPermission();
-                    await notifications.schedule(
-                      DateTime.now().add(const Duration(seconds: 10)),
-                      'Your Daily Jar is ready',
-                      'Test reminder (dev)',
-                    );
-                  },
-                  child: const Text('Test reminder'),
-                ),
             ],
           ),
       ],
@@ -357,12 +320,8 @@ class _PathPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var i = 0; i < count - 1; i++) {
-      final a = Offset(x(i), i * rowH + Space.l + 32),
-          b = Offset(x(i + 1), (i + 1) * rowH + Space.l + 32);
-      final dot = Paint()
-        ..color = i < current
-            ? PourColors.accent.withValues(alpha: 0.7)
-            : PourColors.outline;
+      final a = Offset(x(i), i * rowH + Space.l + 32), b = Offset(x(i + 1), (i + 1) * rowH + Space.l + 32);
+      final dot = Paint()..color = i < current ? PourColors.accent.withValues(alpha: 0.7) : PourColors.outline;
       for (var t = 0.15; t < 0.9; t += 0.1) {
         canvas.drawCircle(Offset.lerp(a, b, t)!, 3, dot);
       }
@@ -370,6 +329,5 @@ class _PathPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PathPainter old) =>
-      old.current != current || old.count != count;
+  bool shouldRepaint(_PathPainter old) => old.current != current || old.count != count;
 }

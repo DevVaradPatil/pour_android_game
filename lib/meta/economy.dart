@@ -3,6 +3,19 @@
 const int starsPerChest = 20;
 const int chestCoins = 50;
 
+// Store products (Play Console / App Store Connect ids, see TODO.md).
+const String removeAdsId = 'remove_ads', starterPackId = 'starter_pack';
+const int starterPackCoins = 500;
+
+/// Boosters: coins, or a rewarded ad instead.
+const int undoCoins = 30, sandCoins = 40;
+
+/// Interstitials: only after a win, from level 15 on, at least 3 minutes after
+/// the last one (and after app start), never for Remove Ads owners.
+const Duration interstitialGap = Duration(minutes: 3);
+bool interstitialDue({required int level, required Duration sinceLast, required bool removeAds}) =>
+    !removeAds && level >= 15 && sinceLast >= interstitialGap;
+
 /// Coins for the first Daily Jar win of each day.
 const int dailyCoins = 20;
 
@@ -16,11 +29,11 @@ int levelCoins({required int oldStars, required int newStars, required bool boss
 
 /// Bonus for reaching a win streak of 3, 5 or 10 levels without a fail or restart.
 int streakBonus(int streak) => switch (streak) {
-      3 => 10,
-      5 => 20,
-      10 => 50,
-      _ => 0,
-    };
+  3 => 10,
+  5 => 20,
+  10 => 50,
+  _ => 0,
+};
 
 /// Chests unlocked so far by total stars (one per [starsPerChest]).
 int chestsEarned(int totalStars) => totalStars ~/ starsPerChest;

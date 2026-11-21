@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../game/play_kit.dart';
 import '../meta/progress.dart';
+import '../services/ads.dart';
 import '../services/audio.dart';
 import '../services/notifications.dart';
 import 'brand.dart';
@@ -17,18 +18,18 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   Widget _header(String t) => Padding(
-        padding: const EdgeInsets.fromLTRB(Space.l, Space.xl, Space.l, Space.s),
-        child: Text(t.toUpperCase(), style: PourText.label.copyWith(color: PourColors.textMuted)),
-      );
+    padding: const EdgeInsets.fromLTRB(Space.l, Space.xl, Space.l, Space.s),
+    child: Text(t.toUpperCase(), style: PourText.label.copyWith(color: PourColors.textMuted)),
+  );
 
   Widget _toggle(String title, bool value, void Function(bool) set) => SwitchListTile(
-        title: Text(title),
-        value: value,
-        onChanged: (v) => setState(() {
-          progress.updateSettings((_) => set(v));
-          audio.syncMusic();
-        }),
-      );
+    title: Text(title),
+    value: value,
+    onChanged: (v) => setState(() {
+      progress.updateSettings((_) => set(v));
+      audio.syncMusic();
+    }),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +60,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             },
+          ),
+          FutureBuilder<bool>(
+            future: ads.privacyOptionsRequired(),
+            builder: (context, snap) => snap.data ?? false
+                ? Column(
+                    children: [
+                      _header('Privacy'),
+                      ListTile(
+                        title: const Text('Ad privacy choices'),
+                        subtitle: const Text('Change what you agreed to for ads'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: ads.showPrivacyOptions,
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
           ),
           _header('About'),
           ListTile(

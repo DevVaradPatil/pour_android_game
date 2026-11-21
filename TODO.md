@@ -20,10 +20,11 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
 
 ## Emulator / devices
 
-- [ ] **Emulator storage.** `Medium_Phone_API_36.1` is down to ~420 MB free, below Android's 500 MB low-storage line, so **no APK installs any more**, not even profile builds (`INSTALL_FAILED_INSUFFICIENT_STORAGE`, 2026-11-20). Pick one fix:
-  - Free space by uninstalling unused apps on it (`in.sawari.sawari`, `com.varad.bolo`), or
-  - Android Studio → Device Manager → the AVD → Edit → Advanced → Internal Storage 8 GB → Wipe Data, or
-  - Tell Claude to create a separate project AVD with larger storage. It's local and reversible, and uses ~4–8 GB of host disk.
+- [ ] **Emulator storage (blocks Claude's device checks).** `Medium_Phone_API_36.1` has ~330 MB free and no build installs. Claude deleted its own leftovers (old recordings) and the extra AVD it had made, and won't touch your apps. To unblock, pick one:
+  - Uninstall one app on it (`in.sawari.sawari` or `com.varad.bolo`), or
+  - Android Studio → Device Manager → the AVD → Edit → Advanced → Internal Storage 8 GB → Wipe Data (removes those apps).
+  - Note: the Android Emulator was updated to 37.3.10 (2026-11-21), so the old quick-boot snapshot no longer loads; it cold-boots fine.
+- [ ] **Phase 8 phone test** (`dist/pour-phase8-arm64.apk`): see the checklist in PLAN.md Phase 8.
 - [ ] **A real low-end Android phone** (2020-era, 3–4 GB RAM, e.g. Helio G-series) with USB debugging on. Needed for the performance gate. (Phase 1, again in 7 and 10)
 - [ ] At least one more real Android phone, ideally a different maker, for tilt-feel calibration. (Phase 1)
 - [ ] **Toy test:** hand the Phase 1 build to 5 people with no instructions and note whether they keep playing past 2 minutes. (End of Phase 1)
@@ -44,7 +45,11 @@ Tick items off here and add notes (e.g. where a secret is stored, **never the se
   - New personal accounts must run a **closed test with 12+ testers for 14 consecutive days** before production. Start recruiting testers in Phase 8.
 - [ ] **Firebase project.** Add the Android app with the final application ID, download `google-services.json`, and put it at `android/app/google-services.json` (git-ignored). (Phase 9)
 - [ ] **AdMob account.** Create the app, then give Claude the **AdMob App ID** and the **ad unit IDs** (rewarded, interstitial). These aren't secret, but they're yours. Until then Claude uses Google's test IDs only. (Phase 8)
+  - In AdMob → Privacy & messaging, create a **GDPR consent message** for the app (the in-app consent form comes from there; with the test app ID Google serves a sample).
+  - Play Console → App content: declare **Ads: yes**, the **Advertising ID** use, and fill the **Data safety** form for AdMob (Phase 11).
 - [ ] **Payments profile + merchant account** in Play Console, needed for IAP. Then create the products `remove_ads` and `starter_pack`, and add license-tester Gmail accounts. (Phase 8)
+  - Prices are yours to set (GDD: Remove Ads ~$3.99; Starter Pack = remove ads + 500 coins). The shop shows Play's localized price, and says "store isn't available" until the products exist.
+  - IAP testing needs the app uploaded to a testing track at least once; then Claude can verify buy / restore with a license tester on the emulator.
 - [ ] **Upload keystore.** Create it, back it up in two places, and fill in `android/key.properties` (git-ignored). Claude can give you the exact `keytool` command. (Phase 11)
 - [ ] **Privacy policy URL**, hosted anywhere public (GitHub Pages, your site). Claude can draft the text. (Phase 11)
 - [ ] Store listing assets sign-off, plus the Data safety form and content rating questionnaire answers. Claude drafts them, you submit. (Phase 11)
